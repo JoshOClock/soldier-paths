@@ -378,12 +378,19 @@ function restyleTiles() {
 // date being read is shown (the newest edition published on or before that date, else the first).
 let sheetsOn = true, sheetKey = '';
 try { sheetsOn = localStorage.getItem('sp-sheets') !== 'off'; } catch (e) { /* storage blocked */ }
+// The scans carry some transparency, so each sheet sits on a plain paper-coloured backing.
+const SHEET_PAPER = '#e9e2cc';
+const sheetBox = (m) => ({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[m.b[0], m.b[1]], [m.b[2], m.b[1]], [m.b[2], m.b[3]], [m.b[0], m.b[3]], [m.b[0], m.b[1]]]] } });
 function addSheets() {
+  if (!ML.getSource('sheet-paper')) {
+    ML.addSource('sheet-paper', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    ML.addLayer({ id: 'sheet-paper', type: 'fill', source: 'sheet-paper', minzoom: 10, paint: { 'fill-color': SHEET_PAPER, 'fill-opacity': 1 } });
+  }
   for (const m of IDX.sheets || []) {
     const id = 'sheet-' + m.id;
     if (ML.getSource(id)) continue;
-    ML.addSource(id, { type: 'raster', tiles: [`wt/WWIIMM${m.id}_TIFF/{z}/{x}/{y}.png`], tileSize: 256, minzoom: 8, maxzoom: 16, bounds: m.b, attribution: '' });
-    ML.addLayer({ id, type: 'raster', source: id, minzoom: 10, layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.92, 'raster-fade-duration': 0 } });
+    ML.addSource(id, { type: 'raster', scheme: 'tms', tiles: [`wt/WWIIMM${m.id}_TIFF/{z}/{x}/{y}.png`], tileSize: 256, minzoom: 8, maxzoom: 16, bounds: m.b });
+    ML.addLayer({ id, type: 'raster', source: id, minzoom: 10, layout: { visibility: 'none' }, paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } });
   }
   sheetKey = ''; syncSheets();
 }
@@ -405,6 +412,7 @@ function syncSheets() {
   if (key === sheetKey) return;
   sheetKey = key;
   for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setLayoutProperty(id, 'visibility', on.has(m.id) ? 'visible' : 'none'); }
+  ML.getSource('sheet-paper')?.setData({ type: 'FeatureCollection', features: IDX.sheets.filter((m) => on.has(m.id)).map(sheetBox) });
 }
 // The sheet under the centre of the view, for the credit line.
 function sheetHere() {
