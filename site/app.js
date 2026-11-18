@@ -105,7 +105,7 @@ function welcome() {
   tlEl.innerHTML = ''; tlG = null;
   $('capDate').textContent = ''; $('capAge').textContent = ''; $('capPlace').textContent = ''; $('capOther').textContent = '';
   if (anim) anim.stop(); anim = null;
-  flyTo([-30, 48], 9000); userView = false; $('mreset').hidden = true;
+  flyTo(CANADA.c, CANADA.k); userView = false; $('mreset').hidden = true;
   draw();
 }
 
@@ -118,8 +118,9 @@ function select(id, keepT) {
   // Keep the globe where it is; go() then glides from the current view to the new soldier's stop.
   active = -2; curT = null; switching = true;
   tlDraw();
-  // Carry the date over when switching between soldiers; otherwise start at his first story.
-  requestAnimationFrame(() => { if (keepT != null) seek(keepT); else if (STEPS.length) seekStep(0); else { scrollTo(0, 0); onScroll(); } });
+  // Carry the date over when switching between soldiers; otherwise open at the top of his story
+  // (the map already shows his first stop there).
+  requestAnimationFrame(() => { if (keepT != null) seek(keepT); else { HELD = null; scrollTo(0, 0); onScroll(); } });
 }
 
 // ---------------- story ----------------
@@ -510,7 +511,7 @@ function vis(p) { return useTiles() ? true : visible(p); }
 const tpath = d3.geoPath(d3.geoTransform({ point(x, y) { const q = ML.project([x, y]); this.stream.point(q.x, q.y); } }), ctx);
 function opath(g) { return useTiles() ? tpath(g) : path(g); }
 function unproj(px, py) { if (useTiles()) { const l = ML.unproject([px, py]); return [l.lng, l.lat]; } return proj.invert([px, py]); }
-let W = 0, H = 0, DPR = 1, view = { c: [-60, 50], k: 4800 }, prog = -1, anim = null, HITS = [], userView = false;
+let W = 0, H = 0, DPR = 1, view = { c: [-97, 59], k: 4300 }, prog = -1, anim = null, HITS = [], userView = false;
 const C = {};
 function readColors() { ['--sea', '--land', '--border', '--grat', '--route', '--route-soft', '--ink', '--paper', '--muted', '--gold', '--f-type', '--f-display'].forEach((k) => { C[k] = css(k); }); }
 const scaleFor = (k) => { const m = Math.min(W, H); return Math.max(m * 0.46, (m / 2) / (k / 6371)); };
@@ -699,9 +700,11 @@ function bdayNear(id, t) { const b = soldier(id).born; if (!b || t == null) retu
 // ---------------- moving between stops ----------------
 // The camera for a point in the story: centred on the soldier, at STOP_K, easing out and back in
 // over long journeys so both ends of the move fit on screen at the middle.
+// With nobody chosen, the map rests on Canada.
+const CANADA = { c: [-97, 59], k: 4300 };
 const STOP_K = 260;
 function camera(pr) {
-  if (pr < 0 || !STEPS.length) return { c: [-30, 48], k: 9000 };
+  if (pr < 0 || !STEPS.length) return { c: CANADA.c.slice(), k: CANADA.k };
   const i = Math.floor(pr), f = pr - i, a = STEPS[Math.min(i, STEPS.length - 1)], b = STEPS[Math.min(i + 1, STEPS.length - 1)];
   if (!(f > 0) || a === b) return { c: a.p, k: STOP_K };
   const km = d3.geoDistance(a.p, b.p) * 6371, bump = Math.max(0, Math.log(km * 1.3 / STOP_K));
@@ -727,7 +730,7 @@ function go(i) {
   active = i; hidePop(); userView = false; $('mreset').hidden = true;
   STEPS.forEach((s, j) => s.el.classList.toggle('on', j === i));
   const s = STEPS[i] || null;
-  const target = s ? { c: s.p, k: s.k, p: i } : { c: [-60, 50], k: 4800, p: -1 };
+  const target = s ? { c: s.p, k: s.k, p: i } : { c: CANADA.c.slice(), k: CANADA.k, p: -1 };
   const from = { c: view.c.slice(), k: view.k, p: prog };
   // After a tab switch the route belongs to a different soldier: show it up to his stop at once, only the view moves.
   if (switching) { from.p = target.p; prog = target.p; switching = false; }
