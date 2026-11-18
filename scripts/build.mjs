@@ -266,6 +266,9 @@ fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, 'soldier'), { recursive: true });
 // Vendor the map libraries so the site has no CDN dependency.
 const VENDOR = path.join(ROOT, 'site', 'data', 'vendor');
+// The date parser is shared with the contribute page.
+fs.mkdirSync(path.join(ROOT, 'site', 'data', 'lib'), { recursive: true });
+fs.copyFileSync(path.join(ROOT, 'scripts', 'lib', 'dates.mjs'), path.join(ROOT, 'site', 'data', 'lib', 'dates.mjs'));
 fs.mkdirSync(VENDOR, { recursive: true });
 if (fs.existsSync(path.join(DATA, 'media'))) fs.cpSync(path.join(DATA, 'media'), path.join(OUT, 'media'), { recursive: true });
 for (const f of ['d3/dist/d3.min.js', 'topojson-client/dist/topojson-client.min.js', 'world-atlas/countries-50m.json', 'world-atlas/countries-110m.json', 'maplibre-gl/dist/maplibre-gl.js', 'maplibre-gl/dist/maplibre-gl.css']) {

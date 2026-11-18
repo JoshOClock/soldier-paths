@@ -52,7 +52,7 @@ function positionAt(id, t) {
 function buildTabs() {
   const nav = $('tabs');
   nav.innerHTML = IDX.soldiers.map((s) => `<button role="tab" data-id="${s.id}" aria-selected="false">${esc(s.name.replace(/,.*$/, ''))}</button>`).join('') +
-    `<button type="button" class="eye" id="eye" aria-pressed="true" title="Show or hide the other soldiers on the map">others on map</button>`;
+    `<a class="eye addlink" href="contribute.html">+ add a soldier</a><button type="button" class="eye" id="eye" aria-pressed="true" title="Show or hide the other soldiers on the map">others on map</button>`;
   nav.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => select(b.dataset.id, curT)));
   $('eye').addEventListener('click', (e) => { showOthers = !showOthers; e.target.setAttribute('aria-pressed', showOthers); draw(); });
   const h = () => document.documentElement.style.setProperty('--tabh', nav.offsetHeight + 'px');

@@ -208,3 +208,4 @@ a{color:var(--route)}
 .sheetattr{position:absolute;right:56px;top:36px;z-index:3;max-width:min(460px,60%);font-family:var(--f-type);font-size:10.5px;line-height:1.35;color:var(--muted);background:var(--paper);border:1px solid var(--border);padding:2px 6px}
 @media (max-width:899px){.sheetattr{font-size:9.5px}}
 .c-ai{color:var(--muted);border-style:dashed!important}
+.tabs .addlink{text-decoration:none;align-self:center;margin-right:14px}.tabs .addlink+.eye{margin-left:0}
