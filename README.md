@@ -77,3 +77,15 @@ Next: run the war diary pipeline on the 2nd Anti-Tank Regiment diary (Héritage 
 - `units.csv` has a `project44_url` column. When filled in, the viewer links the unit to its Project '44 page.
 - If Project '44 ever shares position data, it goes into `unit_locations.csv` with a source row of `kind` `project44`, credited on every position. Nothing else needs to change.
 - Until then, unit positions come from our own reading of the war diaries.
+
+## Adding a soldier from a family (the "Add a soldier" page)
+
+`site/contribute.html` gives families a prompt (`site/submit/prompt.md`) to paste into their own AI along with their documents. The AI replies with one JSON object (format `soldier-paths/1`). The page checks it with `site/submit/check.mjs`, previews the route, and lets them download the file or paste it into a GitHub issue (`.github/ISSUE_TEMPLATE/soldier.yml`).
+
+To bring a submission in:
+
+    node scripts/import_submission.mjs path/to/name.soldier.json --dry-run   # see what it would add
+    node scripts/import_submission.mjs path/to/name.soldier.json            # add as private
+    npm run build
+
+Imported soldiers are private until you change `privacy` to `public` in `data/soldiers.csv` (or import with `--public`). Facts the family marked as their own memory come in as `family`; everything else is `ai_draft`, because the family's AI wrote it. Units the site doesn't know yet are added to `data/units.csv` with no parent, for you to place in the hierarchy.

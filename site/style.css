@@ -208,3 +208,42 @@ a{color:var(--route)}
 .sheetattr{position:absolute;right:56px;top:36px;z-index:3;max-width:min(460px,60%);font-family:var(--f-type);font-size:10.5px;line-height:1.35;color:var(--muted);background:var(--paper);border:1px solid var(--border);padding:2px 6px}
 @media (max-width:899px){.sheetattr{font-size:9.5px}}
 .c-ai{color:var(--muted);border-style:dashed!important}
+
+.mapzoom button.sheettoggle[data-mode="see"] svg{opacity:.55}
+.mapzoom button.sheettoggle[data-mode="see"]{background:var(--paper);color:var(--ink);border-style:dashed}
+.tabs .tab{display:inline-flex;align-items:stretch}
+.tabs .tabx{background:none;border:0;color:var(--muted);font-size:18px;line-height:1;padding:0 10px 0 0;cursor:pointer}
+.tabs .tabx:hover{color:var(--route)}
+.tabs .addwrap{position:relative;align-self:center;margin-left:8px}
+.tabs .addbtn{font-family:var(--f-type);font-size:13px;background:none;border:1px dashed var(--border);color:var(--ink);padding:5px 10px;cursor:pointer;border-radius:2px}
+.tabs .addbtn:disabled{opacity:.4;cursor:default}
+.addmenu{position:absolute;left:0;top:calc(100% + 6px);z-index:40;min-width:280px;max-height:60vh;overflow:auto;background:var(--paper);border:1px solid var(--border);box-shadow:0 6px 18px rgba(0,0,0,.18);padding:6px}
+.addmenu input{width:100%;box-sizing:border-box;font-family:var(--f-type);font-size:13px;padding:6px 8px;border:1px solid var(--border);background:var(--card);color:var(--ink);margin-bottom:4px}
+.addmenu ul{list-style:none;margin:0;padding:0}
+.addmenu li button{display:block;width:100%;text-align:left;background:none;border:0;padding:8px;cursor:pointer;color:var(--ink);font-family:var(--f-body);font-size:15px}
+.addmenu li button:hover{background:var(--card)}
+.addmenu li button span{display:block;font-family:var(--f-type);font-size:11.5px;color:var(--muted)}
+.addmenu a{display:block;font-family:var(--f-type);font-size:12px;color:var(--route);padding:8px;border-top:1px solid var(--rule);margin-top:4px}
+.welcome{padding:40px 28px}
+.welcome h1{font-family:var(--f-display);font-weight:800;font-size:clamp(44px,6vw,72px);line-height:.92;text-transform:uppercase;margin:6px 0 12px}
+.welcome .pick{list-style:none;margin:18px 0;padding:0}
+.welcome .pick button{display:grid;grid-template-columns:48px 1fr;column-gap:14px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--rule);padding:10px 12px;margin:0 0 10px;cursor:pointer;color:var(--ink)}
+.welcome .pick button:hover{border-color:var(--route)}
+.welcome .pick img{grid-row:span 2;width:48px;height:48px;object-fit:cover;filter:grayscale(1);border-radius:50%}
+.welcome .pick b{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.welcome .pick span{font-family:var(--f-type);font-size:12px;color:var(--muted)}
+.welcome .small{font-size:14px}
+/* Hovering the map: a thin outline and a hint, so it's clear the wheel zooms the map here, not the story. */
+.mapbox::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 2px transparent;transition:box-shadow .15s;z-index:6}
+.mapbox:hover::after{box-shadow:inset 0 0 0 2px var(--route-soft)}
+.phint{position:absolute;left:12px;top:12px;z-index:6;font-family:var(--f-type);font-size:11.5px;color:var(--muted);background:var(--paper);border:1px solid var(--border);padding:2px 7px;opacity:0;transition:opacity .15s;pointer-events:none}
+.mapbox:hover .phint{opacity:1}
+@media (hover:none){.phint{display:none}}
+.tl{cursor:default}
+.step{cursor:pointer}
+.step:not(.on):hover h3{color:var(--route)}
+.step.on{cursor:default}
+.addmenu li.mh{font-family:var(--f-type);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 8px 2px}
+.tabs .tab.unit [role=tab]{font-style:normal;letter-spacing:.03em}
+.welcome .wh{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;margin:22px 0 4px}
+.welcome .pick.units button{grid-template-columns:1fr}

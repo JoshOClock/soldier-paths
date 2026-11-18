@@ -192,6 +192,40 @@ function trackFor(s) {
   return spans.filter((x) => x.place).map(({ key, ...x }) => ({ ...x, from: dayToIso(x.from), to: dayToIso(x.to) }));
 }
 
+// ---------- unit stops ----------
+// Where a soldier's own records go quiet, his unit's locations fill the gaps as extra stops, marked
+// "from his unit". A unit stop is used only when his last own stop has run out (its date range is
+// over) and his posting puts him in that unit (or a sub-unit of it) on that day.
+const uname = (id) => U.get(id)?.short_name || U.get(id)?.name || id;
+function unitStopRow(loc, viaUnit, forUnitPath) {
+  const pl = P.get(loc.place_id);
+  return {
+    event_id: 'u:' + loc.location_id, soldier_id: '', kind: 'unit', date: loc.date_from + (loc.date_to ? ' to ' + loc.date_to : ''),
+    place_id: loc.place_id, unit_id: loc.unit_id,
+    detail: forUnitPath ? `At ${pl.name}` : `With his unit at ${pl.name}`,
+    source_id: loc.source_id, confidence: forUnitPath ? loc.confidence : 'inherited', status: loc.status,
+    note: loc.note || '', from_unit: viaUnit,
+    start: dayToIso(loc._range.lo), end: loc._range.hi == null ? null : dayToIso(loc._range.hi),
+    quotes: loc.quote ? [{ quote_id: 'uq:' + loc.location_id, event_id: 'u:' + loc.location_id, source_id: loc.source_id, page_ref: loc.page_ref || '', label: `From ${SRC.get(loc.source_id)?.title || 'the source'}${loc.page_ref ? ', ' + loc.page_ref : ''}`, text: loc.quote }] : [],
+  };
+}
+function unitStopsFor(s) {
+  const own = events.filter((e) => e.soldier_id === s.soldier_id && e.place_id);
+  const out = [];
+  for (const loc of unitLocs) {
+    if (!loc._range) continue;
+    const d = loc._range.lo, post = posting(s.soldier_id, d);
+    if (!post) continue;
+    const up = unitPos(post.unit_id, d);
+    if (!up || up.via !== loc.unit_id) continue;   // only the most specific unit with a location that day
+    const ev = [...own].reverse().find((e) => (e._start ?? e._range.lo) <= d);
+    if (ev && (ev._range.hi == null || ev._range.hi >= d)) continue;   // his own record still covers that day
+    if (own.some((e) => Math.abs((e._start ?? e._range.lo) - d) <= 2)) continue;
+    out.push(unitStopRow(loc, up.via, false));
+  }
+  return out;
+}
+
 // ---------- close by ----------
 const CLOSE_KM = 10;
 function km(a, b) {
@@ -266,6 +300,9 @@ fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, 'soldier'), { recursive: true });
 // Vendor the map libraries so the site has no CDN dependency.
 const VENDOR = path.join(ROOT, 'site', 'data', 'vendor');
+// The date parser is shared with the contribute page.
+fs.mkdirSync(path.join(ROOT, 'site', 'data', 'lib'), { recursive: true });
+fs.copyFileSync(path.join(ROOT, 'scripts', 'lib', 'dates.mjs'), path.join(ROOT, 'site', 'data', 'lib', 'dates.mjs'));
 fs.mkdirSync(VENDOR, { recursive: true });
 if (fs.existsSync(path.join(DATA, 'media'))) fs.cpSync(path.join(DATA, 'media'), path.join(OUT, 'media'), { recursive: true });
 for (const f of ['d3/dist/d3.min.js', 'topojson-client/dist/topojson-client.min.js', 'world-atlas/countries-50m.json', 'world-atlas/countries-110m.json', 'maplibre-gl/dist/maplibre-gl.js', 'maplibre-gl/dist/maplibre-gl.css']) {
@@ -298,11 +335,26 @@ for (const s of pub) {
   fs.writeFileSync(path.join(OUT, 'soldier', s.soldier_id + '.json'), JSON.stringify({
     soldier: strip(s),
     postings: postings.filter((p) => p.soldier_id === s.soldier_id).map(strip),
-    events: events.filter((e) => e.soldier_id === s.soldier_id).map((e) => ({ ...strip(e), start: dayToIso(e._start ?? e._range.lo), end: e._range.hi == null ? null : dayToIso(e._range.hi), quotes: quotes.filter((q) => q.event_id === e.event_id).map(strip) })),
+    events: [...events.filter((e) => e.soldier_id === s.soldier_id).map((e) => ({ ...strip(e), start: dayToIso(e._start ?? e._range.lo), end: e._range.hi == null ? null : dayToIso(e._range.hi), quotes: quotes.filter((q) => q.event_id === e.event_id).map(strip) })),
+      ...unitStopsFor(s)].sort((a, b) => a.start.localeCompare(b.start)),
     conflicts: conflicts.filter((c) => c.soldier_id === s.soldier_id).map(strip),
     track: tracks.get(s.soldier_id),
   }, null, 1));
 }
+
+// Units with locations can be added to the map like a soldier.
+const unitPaths = units.filter((u) => unitLocs.some((l) => l.unit_id === u.unit_id && l._range));
+for (const u of unitPaths) {
+  const locs = unitLocs.filter((l) => l.unit_id === u.unit_id && l._range).sort((a, b) => a._range.lo - b._range.lo);
+  fs.writeFileSync(path.join(OUT, 'soldier', 'unit-' + u.unit_id + '.json'), JSON.stringify({
+    soldier: { soldier_id: 'unit-' + u.unit_id, display_name: u.name, service_number: '', rank: '', birth_date: '', birth_place_id: '', kind: 'unit' },
+    postings: [], conflicts: [], track: [],
+    events: locs.map((l) => unitStopRow(l, u.unit_id, true)),
+  }, null, 1));
+}
+const idxPath = path.join(OUT, 'index.json'), idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
+idx.unitpaths = unitPaths.map((u) => ({ id: 'unit-' + u.unit_id, name: u.name, short: u.short_name || u.name, kind: 'unit', unit: U.get(u.parent_id)?.name || '', stops: unitLocs.filter((l) => l.unit_id === u.unit_id && l._range).length }));
+fs.writeFileSync(idxPath, JSON.stringify(idx, null, 1));
 
 const pairs = [];
 for (let i = 0; i < pub.length; i++) for (let j = i + 1; j < pub.length; j++) pairs.push(...closeBy(pub[i], pub[j], tracks.get(pub[i].soldier_id), tracks.get(pub[j].soldier_id)));
@@ -310,4 +362,4 @@ fs.writeFileSync(path.join(OUT, 'closeby.json'), JSON.stringify(pairs, null, 1))
 
 for (const n of notes) if (!n._used) warn(`${n._where}: hand-written note "${n.title}" matched no computed episode`);
 if (warnings.length) { console.warn(`${warnings.length} warning(s):`); warnings.forEach((w) => console.warn('  ' + w)); }
-console.log(`Built ${pub.length} soldier(s), ${places.length} places, ${pairs.length} close-by episode(s) -> site/data/`);
+console.log(`Built ${pub.length} soldier(s), ${unitPaths.length} unit path(s), ${places.length} places, ${pairs.length} close-by episode(s) -> site/data/`);
