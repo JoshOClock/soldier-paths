@@ -39,6 +39,8 @@ branch for Josh to review. It never touches `main`.
    - `confidence`: `documented` if the text names this unit at this place on this date;
      `inferred` if you are placing it from its brigade or division
    - `status`: `ai_draft`
+   - `summary`: one short line in your own words on what the unit was doing there (under 12 words), e.g.
+     `Supported the Queen's Own Rifles in the assault on Bernières`. This is the headline people read.
 6. If the text names a sub-unit of a wanted unit (a regiment's battery, a brigade's battalion) that a soldier's
    posting points to, use that sub-unit. Don't add units nobody belongs to.
 7. Run `npm ci && npm run build`. Fix any validation errors the build reports. Never delete or change rows
@@ -119,9 +121,11 @@ Rules:
    all rights reserved or without a clear reuse statement.
 4. `caption`: one or two sentences in your own words from the record (no long quotes). `date` as precise as the
    record allows (`19 Jul 1944`, `Jul 1944`, `late Jul 1944`). `note`: photographer or unit, and anything uncertain.
-5. `lon`/`lat` for the named place; `precision_km` 1 for a town, 5 to 10 for "near" or "south of".
-6. `photo_id`: `iwm-b-8910`, `lac-3563575`, and so on. Never add a photo that's already in the file.
-7. Run `npm run build` again to check the rows.
+5. Prefer photos that match a unit location already on the site (same place, within a few days): those show inside
+   the unit's and its soldiers' stories as well as on the map.
+6. `lon`/`lat` for the named place; `precision_km` 1 for a town, 5 to 10 for "near" or "south of".
+7. `photo_id`: `iwm-b-8910`, `lac-3563575`, and so on. Never add a photo that's already in the file.
+8. Run `npm run build` again to check the rows.
 
 ## Later sources (not yet in the job)
 

@@ -219,13 +219,19 @@ function trackFor(s) {
 // Where a soldier's own records go quiet, his unit's locations fill the gaps as extra stops, marked
 // "from his unit". A unit stop is used only when his last own stop has run out (its date range is
 // over) and his posting puts him in that unit (or a sub-unit of it) on that day.
+// One line on what the unit was doing: the location's summary, else the first clause of its note.
+const unitSummary = (loc) => {
+  if (loc.summary) return loc.summary;
+  const n = (loc.note || '').split(/(?<=\.)\s|;\s/)[0].replace(/\.$/, '').trim();
+  return n.length >= 12 && n.length <= 120 ? n : '';
+};
 const uname = (id) => U.get(id)?.short_name || U.get(id)?.name || id;
 function unitStopRow(loc, viaUnit, forUnitPath) {
   const pl = P.get(loc.place_id);
   return {
     event_id: 'u:' + loc.location_id, soldier_id: '', kind: 'unit', date: loc.date_from + (loc.date_to ? ' to ' + loc.date_to : ''),
     place_id: loc.place_id, unit_id: loc.unit_id,
-    detail: forUnitPath ? `At ${pl.name}` : `With his unit at ${pl.name}`,
+    detail: unitSummary(loc) || (forUnitPath ? `At ${pl.name}` : `With his unit at ${pl.name}`),
     source_id: loc.source_id, confidence: forUnitPath ? loc.confidence : 'inherited', status: loc.status,
     note: loc.note || '', from_unit: viaUnit,
     start: dayToIso(loc._range.lo), end: loc._range.hi == null ? null : dayToIso(loc._range.hi),
