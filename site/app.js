@@ -391,7 +391,7 @@ function addSheets() {
   for (const m of IDX.sheets || []) {
     const id = 'sheet-' + m.id;
     if (ML.getSource(id)) continue;
-    ML.addSource(id, { type: 'raster', scheme: 'tms', tiles: [`wt/WWIIMM${m.id}_TIFF/{z}/{x}/{y}.png`], tileSize: 256, minzoom: 8, maxzoom: 16, bounds: m.b });
+    ML.addSource(id, { type: 'raster', tiles: [`wt/WWIIMM${m.id}_TIFF/{z}/{x}/{y}.png`], tileSize: 256, minzoom: 8, maxzoom: 16, bounds: m.b });
     ML.addLayer({ id, type: 'raster', source: id, minzoom: SHEET_Z, layout: { visibility: 'none' }, paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } });
   }
   if (!ML.getLayer('sheet-outline')) {
