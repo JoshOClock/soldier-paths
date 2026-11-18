@@ -47,7 +47,7 @@ branch for Josh to review. It never touches `main`.
 9. Commit with a message listing the chapter, units and number of rows, and push the branch.
    Cloudflare Pages builds a preview of the branch at `https://auto-unit-paths.soldier-paths.pages.dev`.
 
-**One chapter per run. Stop after it**, then do the close-by notes below. Don't start a second chapter even if
+**One chapter per run. Stop after it**, then do the close-by notes and archive photos below. Don't start a second chapter even if
 there's time left.
 
 ## Chapter queue
@@ -96,8 +96,40 @@ oldest war date first:
 
 Never edit or replace a note someone else wrote.
 
+## Archive photos (every run, after the close-by notes)
+
+Find up to **8** archive photos per run to show as camera icons on the map (`data/photos.csv`). Work through the
+places and dates the site already covers, earliest first, and keep going back over chapters done before this step
+existed (5 onward) until they're covered. Record progress in `pipeline_state.json` as
+`"photos_done": ["ch5", "ch6", ...]` (a chapter counts as done once its main places have been searched).
+
+Where to look (search with WebSearch, then fetch the result pages):
+- Imperial War Museums (iwm.org.uk): the Army Film & Photographic Unit series (catalogue numbers B, BU, A).
+- Library and Archives Canada (recherche-collection-search.bac-lac.gc.ca): Canadian Army photos (MIKAN numbers).
+- Wikimedia Commons copies of IWM and LAC photos, which give the archive number and date.
+
+Rules:
+1. Only add a photo when its archive record names the place (or the place is unmistakable from the record) and gives a
+   date or a date range. Prefer photos of Canadian units, and of the units soldiers on the site belong to.
+2. Use the archive's own page for `page_url` and the archive's own image link for `image_url` (for IWM, the
+   `media.iwm.org.uk` link shown on the item page; for Commons, the file's direct upload.wikimedia.org link).
+   Don't download or copy images into the repo.
+3. `credit` exactly as the archive asks (IWM: `Image: IWM (B 8910)`; LAC: `Library and Archives Canada, MIKAN 1234567`).
+   `licence`: `IWM Non-Commercial Licence`, `Public domain`, or what the record says. Skip anything marked
+   all rights reserved or without a clear reuse statement.
+4. `caption`: one or two sentences in your own words from the record (no long quotes). `date` as precise as the
+   record allows (`19 Jul 1944`, `Jul 1944`, `late Jul 1944`). `note`: photographer or unit, and anything uncertain.
+5. `lon`/`lat` for the named place; `precision_km` 1 for a town, 5 to 10 for "near" or "south of".
+6. `photo_id`: `iwm-b-8910`, `lac-3563575`, and so on. Never add a photo that's already in the file.
+7. Run `npm run build` again to check the rows.
+
 ## Later sources (not yet in the job)
 
 - War diaries on Héritage (images only, no text). Needs a run on a computer with a browser, and the
   Canadiana image server was not responding when tested on 2026-11-18.
 - CMHQ reports (Directorate of History and Heritage), unit-level detail, PDF.
+
+## Finishing
+
+Push the branch after all three steps. End with a short plain-language summary for Josh: chapter and units, locations added,
+close-by notes drafted, photos added (with places), and anything you weren't sure about.
