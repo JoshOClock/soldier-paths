@@ -1,5 +1,5 @@
 {
-  "next_chapter": 14,
+  "next_chapter": 15,
   "runs": [
     {
       "date": "2026-11-18",
@@ -35,6 +35,27 @@
       "date": "2026-11-18",
       "chapter": 12,
       "rows_added": 25
+    },
+    {
+      "date": "2026-11-18",
+      "chapter": 14,
+      "units": [
+        "2-cdn-inf-div",
+        "2-cdn-armd-bde"
+      ],
+      "rows_added": 8,
+      "note": "2nd A-Tk Regt, 23 Bty and 17 Lt Fd Amb not named in ch. XIV"
     }
-  ]
+  ],
+  "done": {
+    "14": [
+      "2-cdn-inf-div",
+      "2-cdn-atk-regt",
+      "23-atk-bty",
+      "23-bty-k-trp",
+      "23-bty-j-trp",
+      "2-cdn-armd-bde",
+      "17-lt-fd-amb"
+    ]
+  }
 }
