@@ -178,7 +178,8 @@ function trackFor(s) {
     for (let k = i; k < j; k++) {
       const ev = own[k];
       if (ev._range.hi != null && ev._range.hi < prev) warn(`${ev._where}: out of order (ends before the row above starts)`);
-      const spread = n > 1 ? ev._range.lo + Math.floor(((k - i) * span) / n) : ev._range.lo;
+      const base = ev._range.approx ? ev._range.best : ev._range.lo;   // an "about" date starts on the date given
+      const spread = n > 1 ? ev._range.lo + Math.floor(((k - i) * span) / n) : base;
       ev._start = Math.max(spread, prev + (ev._range.lo <= prev ? 1 : 0));
       prev = ev._start;
     }
