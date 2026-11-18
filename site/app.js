@@ -43,7 +43,15 @@ const place = (id) => IDX.places[id];
 const soldier = (id) => IDX.soldiers.find((s) => s.id === id) || (IDX.unitpaths || []).find((u) => u.id === id);
 const isUnit = (id) => soldier(id)?.kind === 'unit';
 // Short name for labels: a man's first name, a unit's short name.
-const who = (id) => isUnit(id) ? soldier(id).short : first(soldier(id).name);
+const who = (id) => isUnit(id) ? unitLabel(soldier(id).name) : first(soldier(id).name);
+// A readable unit name for tabs and labels: "Sherbrooke Fusiliers", "2nd Division", "2nd Armoured Brigade".
+function unitLabel(name) {
+  // A numbered regiment with its real name in brackets: "27th Armoured Regiment (The Sherbrooke Fusiliers Regiment)".
+  const nick = name.match(/^\d+\w* [\w -]*Regiment \(([^)]+)\)/);
+  if (nick) return nick[1].replace(/^The /, '').replace(/ Regiment$/, '');
+  return name.replace(/\s*\([^)]*\)/g, '').replace(/,.*$/, '').replace(/^The /, '').replace(/^(?!Royal Regiment)(.*) of Canada$/, '$1')
+    .replace(/ Canadian /, ' ').replace(/ Infantry (Brigade|Division)/, ' $1').trim();
+}
 
 // Where a soldier is at time t: his own stops in order, interpolated along the way between them.
 const STOPS = {};
@@ -70,7 +78,7 @@ function buildTabs() {
   const nav = $('tabs');
   const rest = IDX.soldiers.filter((s) => !ROSTER.includes(s.id)), restU = (IDX.unitpaths || []).filter((u) => !ROSTER.includes(u.id));
   nav.innerHTML = ROSTER.map((id) => { const s = soldier(id);
-    return `<span class="tab${isUnit(id) ? ' unit' : ''}"><button role="tab" data-id="${id}" aria-selected="${id === SELF}">${esc(isUnit(id) ? s.short : s.name.replace(/,.*$/, ''))}</button><button type="button" class="tabx" data-id="${id}" aria-label="Remove ${esc(s.name)}" title="Remove from the map">×</button></span>`; }).join('')
+    return `<span class="tab${isUnit(id) ? ' unit' : ''}"><button role="tab" data-id="${id}" aria-selected="${id === SELF}">${isUnit(id) ? `<span class="ut" aria-label="Unit">▲</span>${esc(who(id))}` : esc(s.name.replace(/,.*$/, ''))}</button><button type="button" class="tabx" data-id="${id}" aria-label="Remove ${esc(s.name)}" title="Remove from the map">×</button></span>`; }).join('')
     + `<div class="addwrap"><button type="button" class="addbtn" id="addbtn" aria-expanded="false"${rest.length + restU.length ? '' : ' disabled'}>+ Add</button>`
     + `<div class="addmenu" id="addmenu" hidden>${IDX.soldiers.length > 8 ? '<input type="search" id="addq" placeholder="Search by name" aria-label="Search soldiers">' : ''}<ul>`
     + (rest.length ? '<li class="mh">Soldiers</li>' : '') + rest.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(s.name.toLowerCase())}">${esc(s.name)}<span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')
@@ -292,7 +300,7 @@ function meanwhile(from, to) {
   rows.sort((a, b) => a.x.t - b.x.t);
   return `<aside class="meanwhile"><div class="mwh">Meanwhile</div>${rows.map(({ id, x, more }) => more
     ? `<button type="button" class="mw more" data-other="${id}" data-t="${x.t}">+ ${more} more for ${esc(who(id))}</button>`
-    : `<button type="button" class="mw" data-other="${id}" data-t="${x.t}">${FACES[id] ? `<img src="${esc(soldier(id).face)}" alt="" width="24" height="24">` : `<span class="mwi">${esc(who(id).match(/\d+/)?.[0] || who(id)[0])}</span>`}<span><b>${esc(who(id))}</b> · ${esc(x.e.date)} <em class="rel">${esc(later(x.t - from))}</em><br>${esc(x.e.detail)} <i>${esc(place(x.e.place_id).name)}</i></span></button>`).join('')}</aside>`;
+    : `<button type="button" class="mw" data-other="${id}" data-t="${x.t}">${FACES[id] ? `<img src="${esc(soldier(id).face)}" alt="" width="24" height="24">` : `<span class="mwi">${isUnit(id) ? '▲' : esc(who(id)[0])}</span>`}<span><b>${esc(who(id))}</b> · ${esc(x.e.date)} <em class="rel">${esc(later(x.t - from))}</em><br>${esc(x.e.detail)} <i>${esc(place(x.e.place_id).name)}</i></span></button>`).join('')}</aside>`;
 }
 function crossHtml(c) {
   const other = c.soldiers.find((x) => x !== SELF), on = who(other);
@@ -579,7 +587,7 @@ function facePin(q, id, grey, text, dx = 0) {
   const src = grey ? greyFace(id) : im;
   if (src) { const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height, s = Math.max(2 * r / iw, 2 * r / ih);
     ctx.drawImage(src, x - iw * s / 2, y - ih * s / 2, iw * s, ih * s); }
-  if (!src) { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(isUnit(id) ? (soldier(id).short.match(/\d+/)?.[0] || '•') : first(soldier(id).name)[0], x, y); }
+  if (!src) { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(isUnit(id) ? '▲' : first(soldier(id).name)[0], x, y); }
   ctx.restore();
   ctx.restore();
   if (text) label(text, x + r + 7, y + 4, `12px ${C['--f-type']}`, grey ? C['--muted'] : C['--ink'], { tries: [[x + r + 7, y + 4], [x - r - 7 - ctx.measureText(text).width, y + 4], [x - 20, y - r - 6]] });
