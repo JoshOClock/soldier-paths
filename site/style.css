@@ -194,3 +194,5 @@ a{color:var(--route)}
 .mapcap #capOther:empty{display:none}
 
 @media (max-width:899px){.maphint{display:none}}
+.tl svg{cursor:ns-resize}
+@media (max-width:899px){.tl svg{cursor:ew-resize}}

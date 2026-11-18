@@ -12,15 +12,17 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const first = (name) => name.split(' ')[0];
 const fmtDate = (t) => new Date(t).toLocaleDateString('en-CA', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '');
 
-let IDX, CLOSE, LAND, BORDERS, DOCS = {}, SELF, STEPS = [], curT = null, active = -1, showOthers = true;
+let GEO, IDX, CLOSE, LAND, BORDERS, DOCS = {}, SELF, STEPS = [], curT = null, active = -1, showOthers = true;
 const FACES = {};
 
 // ---------------- data ----------------
 async function boot() {
   [IDX, CLOSE] = await Promise.all([fetch('data/index.json').then((r) => r.json()), fetch('data/closeby.json').then((r) => r.json())]);
-  const world = await fetch('data/vendor/countries-50m.json').then((r) => r.json());
-  LAND = topojson.feature(world, world.objects.countries);
-  BORDERS = topojson.mesh(world, world.objects.countries, (a, b) => a !== b);
+  // Two detail levels: coarse for the zoomed-out globe, fine for close views. Land is merged into one shape.
+  const [w50, w110] = await Promise.all(['50m', '110m'].map((r) => fetch(`data/vendor/countries-${r}.json`).then((x) => x.json())));
+  const lod = (w) => ({ land: topojson.merge(w, w.objects.countries.geometries), borders: topojson.mesh(w, w.objects.countries, (a, b) => a !== b) });
+  GEO = { fine: lod(w50), coarse: lod(w110) };
+  LAND = GEO.coarse.land;
   await Promise.all(IDX.soldiers.map(async (s) => {
     DOCS[s.id] = await fetch(`data/soldier/${s.id}.json`).then((r) => r.json());
     if (s.face) { const im = new Image(); im.onload = () => draw(); im.src = s.face; FACES[s.id] = im; }
@@ -34,8 +36,9 @@ const place = (id) => IDX.places[id];
 const soldier = (id) => IDX.soldiers.find((s) => s.id === id);
 
 // Where a soldier is at time t: his own stops in order, interpolated along the way between them.
+const STOPS = {};
 function stopsOf(id) {
-  return DOCS[id].events.filter((e) => e.place_id).map((e) => ({ e, t: ms(e.start), p: [place(e.place_id).lon, place(e.place_id).lat] }));
+  return STOPS[id] ||= DOCS[id].events.filter((e) => e.place_id).map((e) => ({ e, t: ms(e.start), p: [place(e.place_id).lon, place(e.place_id).lat] }));
 }
 function positionAt(id, t) {
   const st = stopsOf(id);
@@ -253,6 +256,7 @@ function tlDraw() {
       : `<text id="tlmkd" y="8" font-size="9.5" fill="${route}" text-anchor="middle"></text>`) + `</svg>`;
   tlEl.innerHTML = svg;
   tlG = { vert, pos, bx, bw, left };
+  tlG.toT = (v) => vert ? Y0 + (v - top) / (bot - top) * (Y1 - Y0) : Y0 + (v - left) / (right - left) * (Y1 - Y0);
   tlEl.querySelector('svg').addEventListener('click', (e) => {
     const rr = tlEl.getBoundingClientRect(), v = vert ? e.clientY - rr.top : e.clientX - rr.left;
     let best = 0, bd = 1e9;
@@ -273,10 +277,30 @@ function tlMark() {
   else { lab.setAttribute('x', Math.max(30, Math.min(tlEl.clientWidth - 30, p))); lab.textContent = `${dm} ${y}`; }
 }
 new ResizeObserver(() => tlDraw()).observe(tlEl);
+// Mouse wheel over the timeline moves through time; dragging along it scrubs to that date.
+tlEl.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const dir = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  const t = Math.max(STEPS[0].t, Math.min(STEPS[STEPS.length - 1].t, (curT ?? Y0) + dir * 0.2 * DAY));
+  seek(t);
+}, { passive: false });
+let tlDrag = false;
+tlEl.addEventListener('pointerdown', (e) => { tlDrag = true; tlEl.setPointerCapture(e.pointerId); });
+tlEl.addEventListener('pointermove', (e) => {
+  if (!tlDrag || !tlG) return;
+  const rr = tlEl.getBoundingClientRect(), v = tlG.vert ? e.clientY - rr.top : e.clientX - rr.left;
+  seek(Math.max(STEPS[0].t, Math.min(Y1, tlG.toT(v))));
+});
+tlEl.addEventListener('pointerup', () => { tlDrag = false; });
+tlEl.addEventListener('pointercancel', () => { tlDrag = false; });
+tlEl.style.touchAction = 'none';
 
 // ---------------- map ----------------
 const canvas = $('map'), ctx = canvas.getContext('2d'), box = $('mapbox');
-const proj = d3.geoOrthographic().clipAngle(90).precision(0.4), path = d3.geoPath(proj, ctx);
+const proj = d3.geoOrthographic().clipAngle(90).precision(1.2), path = d3.geoPath(proj, ctx);
+// The land, sea and graticule only change when the view moves, so they're drawn once into a cached canvas.
+const bg = document.createElement('canvas'), bgctx = bg.getContext('2d'), bgpath = d3.geoPath(proj, bgctx);
+let bgKey = '';
 const grat = d3.geoGraticule10();
 let PLACED = [];
 const hits = (b) => PLACED.some((p) => b[0] < p[0] + p[2] && b[0] + b[2] > p[0] && b[1] < p[1] + p[3] && b[1] + b[3] > p[1]);
@@ -309,6 +333,14 @@ function selfPos() {
   return f > 0 && a !== b ? d3.geoInterpolate(a.p, b.p)(f) : a.p;
 }
 
+const GREY = {};
+function greyFace(id) {
+  const im = FACES[id]; if (!im || !im.complete || !im.naturalWidth) return null;
+  if (GREY[id]) return GREY[id];
+  const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+  const x = c.getContext('2d'); x.filter = 'grayscale(1)'; x.drawImage(im, 0, 0);
+  return (GREY[id] = c);
+}
 function facePin(q, id, grey, text, dx = 0) {
   const r = 15, x = q[0] + dx, y = q[1] - r - 12;
   PLACED.push([x - r - 3, y - r - 3, 2 * r + 6, 2 * r + 18]);
@@ -318,10 +350,11 @@ function facePin(q, id, grey, text, dx = 0) {
   ctx.fillStyle = grey ? C['--muted'] : C['--route']; ctx.fill();
   ctx.beginPath(); ctx.arc(x, y, r + 2.5, 0, 7); ctx.fillStyle = grey ? C['--muted'] : C['--route']; ctx.fill();
   ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip();
-  const im = FACES[id];
-  if (im && im.complete && im.naturalWidth) { if (grey) ctx.filter = 'grayscale(1)'; const s = Math.max(2 * r / im.naturalWidth, 2 * r / im.naturalHeight);
-    ctx.drawImage(im, x - im.naturalWidth * s / 2, y - im.naturalHeight * s / 2, im.naturalWidth * s, im.naturalHeight * s); ctx.filter = 'none'; }
-  else { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(first(soldier(id).name)[0], x, y); }
+  const im = FACES[id] && FACES[id].complete && FACES[id].naturalWidth ? FACES[id] : null;
+  const src = grey ? greyFace(id) : im;
+  if (src) { const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height, s = Math.max(2 * r / iw, 2 * r / ih);
+    ctx.drawImage(src, x - iw * s / 2, y - ih * s / 2, iw * s, ih * s); }
+  if (!src) { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(first(soldier(id).name)[0], x, y); }
   ctx.restore();
   ctx.restore();
   if (text) label(text, x + r + 7, y + 4, `12px ${C['--f-type']}`, grey ? C['--muted'] : C['--ink'], { tries: [[x + r + 7, y + 4], [x - r - 7 - ctx.measureText(text).width, y + 4], [x - 20, y - r - 6]] });
@@ -342,16 +375,30 @@ function edgePin(from, to, id, label) {
   ctx.fillText(label, x + (x > W / 2 ? -22 : 22), y + 4); ctx.restore();
 }
 
-function draw() {
+let drawQueued = false, lastWheel = 0, settleTimer = null;
+// Redraw once with fine outlines after movement stops.
+function settleSoon() { clearTimeout(settleTimer); settleTimer = setTimeout(() => { if (!anim) { bgKey = ''; draw(); } }, 250); }
+function draw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawNow(); }); } }
+function drawNow() {
   if (!LAND || !W) return;
-  proj.translate([W / 2, H / 2]).scale(scaleFor(view.k)).rotate([-view.c[0], -view.c[1]]);
+  proj.translate([W / 2, H / 2]).scale(scaleFor(view.k)).rotate([-view.c[0], -view.c[1]]).clipExtent([[-20, -20], [W + 20, H + 20]]);
+  const key = [view.c[0].toFixed(4), view.c[1].toFixed(4), view.k.toFixed(2), W, H, DPR, C['--land']].join('|');
+  if (key !== bgKey) {
+    bgKey = key;
+    // Coarse outlines while the camera is moving or zoomed out; fine outlines once it settles close in.
+    const moving = !!anim || (drag && drag.moved) || performance.now() - lastWheel < 200;
+    const g = view.k > 900 || moving ? GEO.coarse : GEO.fine;
+    if (moving) settleSoon();
+    if (bg.width !== canvas.width || bg.height !== canvas.height) { bg.width = canvas.width; bg.height = canvas.height; }
+    const b = bgctx; b.setTransform(DPR, 0, 0, DPR, 0, 0);
+    b.fillStyle = C['--paper']; b.fillRect(0, 0, W, H);
+    b.beginPath(); bgpath({ type: 'Sphere' }); b.fillStyle = C['--sea']; b.fill();
+    b.beginPath(); bgpath(grat); b.strokeStyle = C['--grat']; b.lineWidth = 0.7; b.stroke();
+    b.beginPath(); bgpath(g.land); b.fillStyle = C['--land']; b.fill(); b.strokeStyle = C['--border']; b.lineWidth = 0.6; b.stroke();
+    b.beginPath(); bgpath(g.borders); b.strokeStyle = C['--border']; b.lineWidth = 0.8; b.setLineDash([3, 3]); b.stroke(); b.setLineDash([]);
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(bg, 0, 0);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); HITS = []; PLACED = [];
-  ctx.fillStyle = C['--paper']; ctx.fillRect(0, 0, W, H);
-  ctx.beginPath(); path({ type: 'Sphere' }); ctx.fillStyle = C['--sea']; ctx.fill();
-  ctx.beginPath(); path(grat); ctx.strokeStyle = C['--grat']; ctx.lineWidth = 0.7; ctx.stroke();
-  ctx.beginPath(); path(LAND); ctx.fillStyle = C['--land']; ctx.fill();
-  ctx.beginPath(); path(BORDERS); ctx.strokeStyle = C['--border']; ctx.lineWidth = 0.8; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
-  ctx.beginPath(); path(LAND); ctx.strokeStyle = C['--border']; ctx.lineWidth = 0.6; ctx.stroke();
   if (!STEPS.length) return;
   // Route: whole path faint and dashed; travelled part solid red.
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -516,8 +563,22 @@ $('popx').addEventListener('click', hidePop);
 function hitAt(e) { const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; let best = null, bd = 18;
   HITS.forEach((h) => { const d = Math.hypot(h.x - x, h.y - y); if (d < bd) { bd = d; best = h; } }); return best; }
 let drag = null;
-canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, c: view.c.slice(), moved: false }; canvas.setPointerCapture(e.pointerId); });
+const touches = new Map();
+let pinch = null;
+canvas.style.touchAction = 'none';
+canvas.addEventListener('pointerdown', (e) => {
+  touches.set(e.pointerId, [e.clientX, e.clientY]);
+  if (touches.size === 2) { const [a, b] = [...touches.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), k: view.k }; drag = null; return; }
+  drag = { x: e.clientX, y: e.clientY, c: view.c.slice(), moved: false }; canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointercancel', (e) => { touches.delete(e.pointerId); pinch = null; drag = null; });
 canvas.addEventListener('pointermove', (e) => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pinch && touches.size === 2) {
+    const [a, b] = [...touches.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (anim) { anim.stop(); anim = null; } lastWheel = performance.now();
+    view.k = Math.max(20, Math.min(9000, pinch.k * pinch.d / Math.max(10, d))); userView = true; $('mreset').hidden = false; draw(); return;
+  }
   if (!drag) { canvas.style.cursor = hitAt(e) ? 'pointer' : ''; return; }
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.hypot(dx, dy) > 4) drag.moved = true;
   if (!drag.moved) return;
@@ -526,19 +587,37 @@ canvas.addEventListener('pointermove', (e) => {
   userView = true; $('mreset').hidden = false; if (anim) { anim.stop(); anim = null; } draw();
 });
 canvas.addEventListener('pointerup', (e) => {
-  const d = drag; drag = null; if (d && d.moved) return;
+  touches.delete(e.pointerId); if (pinch) { if (touches.size < 2) pinch = null; return; }
+  const d = drag; drag = null; if (d && d.moved) { settleSoon(); return; }
   const h = hitAt(e); if (!h) { hidePop(); return; }
   $('popt').textContent = h.l.name; $('popd').textContent = h.l.d || '';
   pop.hidden = false; const pw = pop.offsetWidth, ph = pop.offsetHeight; let x = h.x + 14, y = h.y - ph / 2;
   if (x + pw > W - 8) x = h.x - 14 - pw; pop.style.left = Math.max(8, x) + 'px'; pop.style.top = Math.max(8, Math.min(H - ph - 8, y)) + 'px';
 });
-const zoomBy = (f) => { if (anim) { anim.stop(); anim = null; } view.k = Math.max(20, Math.min(9000, view.k * f)); userView = true; $('mreset').hidden = false; draw(); };
-$('zin').addEventListener('click', () => zoomBy(0.6));
-$('zout').addEventListener('click', () => zoomBy(1 / 0.6));
+// Zoom by factor f, keeping the point under (px, py) fixed when given.
+function zoomBy(f, px, py) {
+  if (anim) { anim.stop(); anim = null; }
+  const before = px != null ? proj.invert([px, py]) : null;
+  view.k = Math.max(20, Math.min(9000, view.k * f));
+  if (before) {
+    proj.scale(scaleFor(view.k));
+    const after = proj.invert([px, py]);
+    if (after && isFinite(after[0])) view.c = [view.c[0] + before[0] - after[0], Math.max(-80, Math.min(80, view.c[1] + before[1] - after[1]))];
+  }
+  userView = true; $('mreset').hidden = false; draw();
+}
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault(); lastWheel = performance.now();
+  const r = canvas.getBoundingClientRect();
+  zoomBy(Math.exp(Math.max(-0.5, Math.min(0.5, e.deltaY * 0.0015))), e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+canvas.addEventListener('dblclick', (e) => { const r = canvas.getBoundingClientRect(); zoomBy(0.5, e.clientX - r.left, e.clientY - r.top); });
+$('zin').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(0.6); });
+$('zout').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(1 / 0.6); });
 $('mreset').addEventListener('click', () => { const i = active; active = -3; go(i); });
 
 new ResizeObserver(() => { resize(); onScroll(); }).observe(box);
-const recolor = () => { readColors(); tlDraw(); draw(); };
+const recolor = () => { readColors(); bgKey = ''; tlDraw(); draw(); };
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', recolor);
 readColors();
 document.fonts && document.fonts.ready.then(() => draw());
