@@ -1,18 +1,32 @@
 # Nightly unit-path job
 
-A scheduled Claude task runs this once a night. Each run adds dated unit locations for one slice of the
-official history, on a branch, for Josh to review. It never touches `main`.
+A scheduled Claude task runs this once a night. It works **on demand**: it only gathers locations for units that
+soldiers on the site actually belong to, one chapter of the official history per run. Each run's work goes on a
+branch for Josh to review. It never touches `main`.
+
+## Which units ("wanted units")
+
+1. Every posting in `data/postings.csv` (any soldier, public or private) names a unit and dates.
+2. The wanted units are those posting units **plus their parents up to division level** (follow `parent_id` in
+   `data/units.csv`), each with the posting's dates. The official history rarely names batteries or companies, so
+   the regiment, brigade and division are where most rows will come from.
+3. Units whose postings fall outside North-West Europe (Italy, Hong Kong, Canada only) have no source in this job yet.
+   List them in the summary and skip them.
 
 ## What a run does
 
 1. Clone `JoshOClock/soldier-paths`, check out (or create) the branch `auto/unit-paths`, and merge `main` into it.
-2. Read `data/import/pipeline_state.json` to find the next chapter to process. If the file doesn't exist,
-   start at chapter 5 of the queue below.
-3. Read that chapter with WebFetch (the pages are long: keep reading with `offset` until the end).
-4. For every unit in `data/units.csv` (and their sub-units) that the chapter places somewhere on a date,
-   add a row to `data/unit_locations.csv`:
+2. Read `data/import/pipeline_state.json` (create it if missing). It records, per chapter, which units have been
+   extracted: `{"done": {"7": ["2-cdn-inf-div", "2-cdn-atk-regt"]}, "runs": [...]}`.
+3. Work out the wanted units (above). Pick the **one** chapter from the queue below, earliest in the war first, whose
+   dates overlap a wanted unit's posting dates and that hasn't been done for that unit yet. Postings for soldiers
+   added most recently come first if there's a choice. If there's nothing left to do, skip to the close-by notes.
+4. Read that chapter with WebFetch (the pages are long: keep reading with `offset` until the end).
+5. For each wanted unit that overlaps the chapter, every time the text places it somewhere on a date, add a row to
+   `data/unit_locations.csv`:
    - `location_id`: `ul-<unit_id>-<yyyymmdd>-<n>`
-   - `date_from` / `date_to`: as precise as the text allows (`19 Jul 1944`, `Jul 1944`, `19 Jul 1944 to 21 Jul 1944`)
+   - `date_from` / `date_to`: as precise as the text allows. For a single day, put the same date in both
+     (an empty `date_to` means open-ended).
    - `place_id`: an existing place from `data/places.csv`, or a new one added there with lon/lat.
      Only use coordinates you are confident of (a named village or town). If the text names an area
      ("south of Caen"), use the nearest named place and widen `precision_km` (5 to 15).
@@ -25,17 +39,42 @@ official history, on a branch, for Josh to review. It never touches `main`.
    - `confidence`: `documented` if the text names this unit at this place on this date;
      `inferred` if you are placing it from its brigade or division
    - `status`: `ai_draft`
-5. Add units the chapter names that are missing from `data/units.csv`, but only within the formations already
-   there (2nd Canadian Infantry Division, 2nd Canadian Armoured Brigade, their brigades, regiments and battalions).
-   Use the official short names. Leave `project44_url` blank.
-6. Run `npm ci && npm run build`. Fix any validation errors the build reports. Never delete or change rows
+6. If the text names a sub-unit of a wanted unit (a regiment's battery, a brigade's battalion) that a soldier's
+   posting points to, use that sub-unit. Don't add units nobody belongs to.
+7. Run `npm ci && npm run build`. Fix any validation errors the build reports. Never delete or change rows
    another run or a person wrote; only add.
-7. Update `data/import/pipeline_state.json` (`{"next_chapter": N, "runs": [{"date", "chapter", "rows_added"}]}`).
-8. Commit with a message listing the chapter and the number of rows added, and push the branch.
+8. Record the chapter and units in `pipeline_state.json` (`done` plus a `runs` entry: date, chapter, units, rows_added).
+9. Commit with a message listing the chapter, units and number of rows, and push the branch.
    Cloudflare Pages builds a preview of the branch at `https://auto-unit-paths.soldier-paths.pages.dev`.
-9. Finish with a short summary: chapter read, rows added per unit, close-by notes drafted, anything uncertain.
 
-Stop after one chapter. If the chapter queue is finished, skip steps 3 to 5 and go straight to the close-by notes below.
+**One chapter per run. Stop after it**, then do the close-by notes below. Don't start a second chapter even if
+there's time left.
+
+## Chapter queue
+
+Base URL: `https://ibiblio.org/hyperwar/UN/Canada/CA/Victory/`
+
+| N | File | Dates covered |
+|---|------|---------------|
+| 5 | Victory-5.html | 6 Jun 1944 |
+| 6 | Victory-6.html | 7 to 30 Jun 1944 |
+| 7 | Victory-7.html | 1 to 23 Jul 1944 |
+| 8 | Victory-8.html | 24 to 31 Jul 1944 |
+| 9 | Victory-9.html | 1 to 12 Aug 1944 |
+| 10 | Victory-10.html | 12 to 23 Aug 1944 |
+| 12 | Victory-12.html | 23 to 30 Aug 1944 |
+| 14 | Victory-14.html | 1 to 30 Sep 1944 (coast and ports) |
+| 15 | Victory-15.html | Sep to Oct 1944 (Scheldt I) |
+| 16 | Victory-16.html | Oct to Nov 1944 (Scheldt II) |
+| 17 | Victory-17.html | 9 Nov 1944 to 7 Feb 1945 |
+| 18 | Victory-18.html | 8 to 21 Feb 1945 (Veritable) |
+| 19 | Victory-19.html | 22 Feb to 10 Mar 1945 (Blockbuster) |
+| 20 | Victory-20.html | 23 Mar to 5 May 1945 (Rhine to the North Sea) |
+| 21 | Victory-21.html | 1 to 22 Apr 1945 (Western Netherlands) |
+| 22 | Victory-22.html | 1 to 8 May 1945 |
+
+Earlier runs (chapters 5 to 8) extracted the whole 2nd Armoured Brigade and parts of the 2nd Division. Count those
+chapters as done for the units they cover; check `data/unit_locations.csv` rather than re-reading.
 
 ## Close-by notes (every run, after the chapter)
 
