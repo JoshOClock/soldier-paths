@@ -323,6 +323,7 @@ let switching = false;
 // ---------------- detailed tiled map (zoomed in) ----------------
 // OpenFreeMap vector tiles (OpenStreetMap data) and Mapzen terrain on AWS, recoloured to the paper palette.
 // Falls back to the globe alone if tiles can't load (no WebGL, offline, or a host that blocks other sites).
+const MIN_K = 3;              // closest zoom: view about 3 km across, enough to read a 1:25,000 sheet
 const TILE_K = 300;            // view width in km below which the tiled map is fully shown
 const TILE_STYLE = window.TILE_STYLE_OVERRIDE || 'https://tiles.openfreemap.org/styles/liberty';
 const TERRAIN = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
@@ -706,7 +707,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (pinch && touches.size === 2) {
     const [a, b] = [...touches.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
     if (anim) { anim.stop(); anim = null; } lastWheel = performance.now();
-    view.k = Math.max(20, Math.min(9000, pinch.k * pinch.d / Math.max(10, d))); userView = true; $('mreset').hidden = false; draw(); return;
+    view.k = Math.max(MIN_K, Math.min(9000, pinch.k * pinch.d / Math.max(10, d))); userView = true; $('mreset').hidden = false; draw(); return;
   }
   if (!drag) { canvas.style.cursor = hitAt(e) ? 'pointer' : ''; return; }
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.hypot(dx, dy) > 4) drag.moved = true;
@@ -728,7 +729,7 @@ canvas.addEventListener('pointerup', (e) => {
 function zoomBy(f, px, py) {
   if (anim) { anim.stop(); anim = null; }
   const before = px != null ? unproj(px, py) : null;
-  view.k = Math.max(20, Math.min(9000, view.k * f));
+  view.k = Math.max(MIN_K, Math.min(9000, view.k * f));
   if (before) {
     proj.scale(scaleFor(view.k));
     if (useTiles()) ML.jumpTo({ center: view.c, zoom: tileZoom() });
