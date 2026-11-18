@@ -7,6 +7,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const REPO = 'JoshOClock/soldier-paths';
 // Where emailed submissions go. Empty hides the email button.
 const SUBMIT_EMAIL = '';
+// Upload-only link (a Dropbox file request). Empty hides the upload button.
+const UPLOAD_URL = 'https://www.dropbox.com/request/e7veg4p4xmmlbkj88zdp';
 let current = null;
 
 fetch('submit/prompt.md').then((r) => r.text()).then((t) => { $('prompt').textContent = t; });
@@ -26,7 +28,7 @@ function check() {
   const out = $('result');
   let s;
   try { s = extractJson($('paste').value); } catch (e) {
-    current = null; gate(); $('sendStep').hidden = true;
+    current = null; gate(); $('sendWait').hidden = false;
     out.innerHTML = `<p class="verdict bad">That doesn't look like the AI's JSON answer. Make sure you pasted its whole reply, including the part that starts with { and ends with }.</p>`;
     return;
   }
@@ -38,7 +40,7 @@ function check() {
     : `<p class="verdict">Looks good. ${stops.length} stop${stops.length === 1 ? '' : 's'}${warnings.length ? `, and ${warnings.length} thing${warnings.length > 1 ? 's' : ''} worth a look` : ''}.</p>`;
   out.innerHTML = verdict + list(errors, 'err') + list(warnings, '') + preview(s, stops);
   drawMap(stops);
-  $('sendStep').hidden = !current;
+  $('sendWait').hidden = !!current;
   gate();
 }
 
@@ -83,9 +85,9 @@ async function drawMap(stops) {
 
 function gate() {
   const ok = !!current && $('ok1').checked && $('ok2').checked;
-  $('download').disabled = !ok; $('github').disabled = !ok; $('email').disabled = !ok || !SUBMIT_EMAIL;
+  $('download').disabled = !ok; $('github').disabled = !ok; $('email').disabled = !ok || !SUBMIT_EMAIL; $('upload').disabled = !ok;
   const ph = (current?.photos || []).map((p) => p.file);
-  $('sendNote').innerHTML = current ? `Your code is <b>${esc(code())}</b>. ${ph.length ? `Attach the file and these ${ph.length} photo${ph.length > 1 ? 's' : ''}: ${ph.map(esc).join(', ')}.` : 'Attach the file, and any photos.'}${SUBMIT_EMAIL ? '' : ' Email sending is coming soon; for now, download the file and send it with your photos to whoever pointed you to this site.'}` : '';
+  $('sendNote').innerHTML = current ? `Your code is <b>${esc(code())}</b>. ${ph.length ? `Attach the file and these ${ph.length} photo${ph.length > 1 ? 's' : ''}: ${ph.map(esc).join(', ')}.` : 'Attach the file, and any photos.'}${UPLOAD_URL ? ` To upload, press the button: it saves your file, then opens the upload page. Drop in the file and your photos, and put ${esc(code())} in your name or note.` : ''}${SUBMIT_EMAIL || UPLOAD_URL ? '' : ' Email sending is coming soon; for now, download the file and send it with your photos to whoever pointed you to this site.'}` : '';
 }
 // A short code ties the file to the email and photos sent with it.
 function code() {
@@ -110,6 +112,8 @@ $('download').addEventListener('click', () => {
   a.download = fileName(); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
 $('email').hidden = false;
+if (UPLOAD_URL) $('upload').hidden = false;
+$('upload').addEventListener('click', () => { $('download').click(); window.open(UPLOAD_URL, '_blank', 'noopener'); });
 if (!SUBMIT_EMAIL) { $('email').textContent = 'Email it with photos (coming soon)'; $('email').title = 'Sending by email is coming soon. For now, download the file and send it with your photos to whoever pointed you to this site.'; }
 $('email')?.addEventListener('click', () => {
   // Download the file first, then open an email with the code in the subject; the person attaches the file and photos.

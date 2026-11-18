@@ -185,7 +185,10 @@ function trackFor(s) {
     i = j;
   }
   const days = [];
+  // Nothing after he died: no position, so no close-by moments or unit stops after his death.
+  const deathEv = own.find((e) => e.kind === 'death'), deathD = deathEv ? deathEv._range.lo : (s.death_date && parseDate(s.death_date) ? parseDate(s.death_date).lo : null);
   for (let d = 0; d <= LAST_DAY; d++) {
+    if (deathD != null && d > deathD) { days.push(null); continue; }
     let row = null;
     const ev = [...own].reverse().find((e) => e._start <= d);
     const post = posting(s.soldier_id, d);
@@ -234,6 +237,8 @@ function unitStopsFor(s) {
   for (const loc of unitLocs) {
     if (!loc._range) continue;
     const d = loc._range.lo, post = posting(s.soldier_id, d);
+    const dead = events.find((e) => e.soldier_id === s.soldier_id && e.kind === 'death');
+    if (dead && d > dead._range.lo) continue;
     if (!post) continue;
     const up = unitPos(post.unit_id, d);
     if (!up || up.via !== loc.unit_id) continue;   // only the most specific unit with a location that day

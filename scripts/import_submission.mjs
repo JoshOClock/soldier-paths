@@ -41,7 +41,9 @@ const status = (c) => (c === 'family' ? 'family' : 'ai_draft');
 
 // Places: reuse an existing place within a kilometre or so with the same first word of the name, else add.
 function placeFor(p) {
-  const near = [...T.places.rows, ...(add.places || [])].find((r) => Math.abs(+r.lat - p.lat) < 0.01 && Math.abs(+r.lon - p.lon) < 0.015);
+  // Reuse an existing place only if it's the same named place (same first word) within a couple of km.
+  const first = (n) => String(n).toLowerCase().normalize('NFKD').replace(/[^a-z ]/g, '').split(/[ ,]/)[0];
+  const near = [...T.places.rows, ...(add.places || [])].find((r) => Math.abs(+r.lat - p.lat) < 0.02 && Math.abs(+r.lon - p.lon) < 0.03 && first(r.name) === first(p.name));
   if (near) return near.place_id;
   let id = slug(p.name.split(',')[0]); if (has('places', 'place_id', id)) id = slug(p.name);
   if (has('places', 'place_id', id)) id = `${id}-${String(p.lat).replace('.', '')}`;

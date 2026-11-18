@@ -55,6 +55,9 @@ function positionAt(id, t) {
   let i = -1;
   st.forEach((s, k) => { if (s.t <= t) i = k; });
   if (i < 0) return null;
+  // After his death he isn't shown on the map.
+  const dead = st.find((s) => s.e.kind === 'death');
+  if (dead && t > dead.t + DAY) return null;
   return { stop: st[i], p: st[i].p, name: place(st[i].e.place_id).name, i };
 }
 

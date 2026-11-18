@@ -35,3 +35,6 @@ textarea#paste{width:100%;box-sizing:border-box;font-family:var(--f-type);font-s
 .pv ol li{margin:0 0 8px}
 .pv ol .d{font-family:var(--f-type);font-size:12.5px;color:var(--route);display:block}
 .pv ol .c{font-family:var(--f-type);font-size:11.5px;color:var(--muted)}
+.howto{margin:6px 0 12px 20px;padding:0}
+.howto li{margin:0 0 6px}
+.howto.overview{font-size:16px;margin:0 0 24px 20px}
