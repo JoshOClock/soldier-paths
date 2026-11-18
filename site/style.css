@@ -243,3 +243,7 @@ a{color:var(--route)}
 .step{cursor:pointer}
 .step:not(.on):hover h3{color:var(--route)}
 .step.on{cursor:default}
+.addmenu li.mh{font-family:var(--f-type);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 8px 2px}
+.tabs .tab.unit [role=tab]{font-style:normal;letter-spacing:.03em}
+.welcome .wh{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;margin:22px 0 4px}
+.welcome .pick.units button{grid-template-columns:1fr}

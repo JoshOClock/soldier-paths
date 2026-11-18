@@ -29,8 +29,9 @@ async function boot() {
     DOCS[s.id] = await fetch(`data/soldier/${s.id}.json`).then((r) => r.json());
     if (s.face) { const im = new Image(); im.onload = () => draw(); im.src = s.face; FACES[s.id] = im; }
   }));
+  await Promise.all((IDX.unitpaths || []).map(async (u) => { DOCS[u.id] = await fetch(`data/soldier/${u.id}.json`).then((r) => r.json()); }));
   // The address remembers who's added and who's being read: #show=a,b&on=a (an old #a still works).
-  const h = new URLSearchParams(location.hash.slice(1)), known = (id) => IDX.soldiers.some((s) => s.id === id);
+  const h = new URLSearchParams(location.hash.slice(1)), known = (id) => !!soldier(id);
   const old = location.hash.slice(1);
   ROSTER = (h.get('show') || (known(old) ? old : '')).split(',').filter(known);
   const on = h.get('on') || ROSTER[0];
@@ -39,7 +40,10 @@ async function boot() {
 }
 
 const place = (id) => IDX.places[id];
-const soldier = (id) => IDX.soldiers.find((s) => s.id === id);
+const soldier = (id) => IDX.soldiers.find((s) => s.id === id) || (IDX.unitpaths || []).find((u) => u.id === id);
+const isUnit = (id) => soldier(id)?.kind === 'unit';
+// Short name for labels: a man's first name, a unit's short name.
+const who = (id) => isUnit(id) ? soldier(id).short : first(soldier(id).name);
 
 // Where a soldier is at time t: his own stops in order, interpolated along the way between them.
 const STOPS = {};
@@ -61,19 +65,20 @@ function saveHash() {
 }
 function buildTabs() {
   const nav = $('tabs');
-  const rest = IDX.soldiers.filter((s) => !ROSTER.includes(s.id));
+  const rest = IDX.soldiers.filter((s) => !ROSTER.includes(s.id)), restU = (IDX.unitpaths || []).filter((u) => !ROSTER.includes(u.id));
   nav.innerHTML = ROSTER.map((id) => { const s = soldier(id);
-    return `<span class="tab"><button role="tab" data-id="${id}" aria-selected="${id === SELF}">${esc(s.name.replace(/,.*$/, ''))}</button><button type="button" class="tabx" data-id="${id}" aria-label="Remove ${esc(s.name)}" title="Remove from the map">×</button></span>`; }).join('')
-    + `<div class="addwrap"><button type="button" class="addbtn" id="addbtn" aria-expanded="false"${rest.length ? '' : ' disabled'}>+ Add soldier</button>`
+    return `<span class="tab${isUnit(id) ? ' unit' : ''}"><button role="tab" data-id="${id}" aria-selected="${id === SELF}">${esc(isUnit(id) ? s.short : s.name.replace(/,.*$/, ''))}</button><button type="button" class="tabx" data-id="${id}" aria-label="Remove ${esc(s.name)}" title="Remove from the map">×</button></span>`; }).join('')
+    + `<div class="addwrap"><button type="button" class="addbtn" id="addbtn" aria-expanded="false"${rest.length + restU.length ? '' : ' disabled'}>+ Add</button>`
     + `<div class="addmenu" id="addmenu" hidden>${IDX.soldiers.length > 8 ? '<input type="search" id="addq" placeholder="Search by name" aria-label="Search soldiers">' : ''}<ul>`
-    + rest.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(s.name.toLowerCase())}">${esc(s.name)}<span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')
+    + (rest.length ? '<li class="mh">Soldiers</li>' : '') + rest.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(s.name.toLowerCase())}">${esc(s.name)}<span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')
+    + (restU.length ? '<li class="mh">Units</li>' : '') + restU.map((u) => `<li><button type="button" data-id="${u.id}" data-name="${esc(u.name.toLowerCase())}">${esc(u.name)}<span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')
     + `</ul><a href="contribute.html">Not here? Add someone from your family →</a></div></div>`;
   nav.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => select(b.dataset.id, curT)));
   nav.querySelectorAll('.tabx').forEach((b) => b.addEventListener('click', () => removeSoldier(b.dataset.id)));
   const ab = $('addbtn'), menu = $('addmenu');
   ab.addEventListener('click', () => { menu.hidden = !menu.hidden; ab.setAttribute('aria-expanded', !menu.hidden); if (!menu.hidden) $('addq')?.focus(); });
   menu.querySelectorAll('li button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
-  $('addq')?.addEventListener('input', (e) => { const q = e.target.value.toLowerCase(); menu.querySelectorAll('li').forEach((li) => { li.hidden = !li.firstChild.dataset.name.includes(q); }); });
+  $('addq')?.addEventListener('input', (e) => { const q = e.target.value.toLowerCase(); menu.querySelectorAll('li:not(.mh)').forEach((li) => { li.hidden = !li.firstChild.dataset.name.includes(q); }); });
   const h = () => document.documentElement.style.setProperty('--tabh', nav.offsetHeight + 'px');
   h(); addEventListener('resize', h);
 }
@@ -94,6 +99,7 @@ function welcome() {
   $('story').innerHTML = `<section class="welcome"><div class="eyebrow">Soldier Paths · Second World War</div><h1>Follow a soldier</h1>
     <p>Pick someone to follow across the map, then add others to see where they were on the same day.</p>
     <ul class="pick">${IDX.soldiers.map((s) => `<li><button type="button" data-id="${s.id}">${s.face ? `<img src="${esc(s.face)}" alt="" width="48" height="48">` : ''}<b>${esc(s.name)}</b><span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>
+    ${(IDX.unitpaths || []).length ? `<h2 class="wh">Or follow a unit</h2><ul class="pick units">${IDX.unitpaths.map((u) => `<li><button type="button" data-id="${u.id}"><b>${esc(u.name)}</b><span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>` : ''}
     <p class="small"><a href="contribute.html">Add someone from your family →</a></p></section>`;
   document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
   tlEl.innerHTML = ''; tlG = null;
@@ -187,7 +193,8 @@ function renderStory() {
     <div class="eyebrow">Soldier Paths · Second World War${doc.soldier.service_number ? ' · ' + esc(doc.soldier.service_number) : ''}</div>
     <h1>${esc(s.name)}</h1>
     <p class="unit">${esc(s.unit)}</p>
-    <p class="lede">${esc(doc.soldier.rank)}. Born ${esc(born)}${bp ? ', ' + esc(bp) : ''}. Every stop below quotes its source exactly. Positions between stops are estimated, and a "close by" note never means the men met unless a record says so.</p>
+    ${isUnit(SELF) ? `<p class="lede">Where this unit was, stop by stop, from the official history and war diaries. Each stop quotes its source. These are drafts read by AI and not yet checked by a person.</p>`
+    : `<p class="lede">${esc(doc.soldier.rank)}. Born ${esc(born)}${bp ? ', ' + esc(bp) : ''}. Every stop below quotes its source. The map puts him only where a record does: his own papers, or his unit's when his own go quiet. A "close by" note never means the men met unless a record says so.</p>`}
     <p class="hint">Scroll to follow him. The timeline beside the map is to scale.</p>
   </header>`;
   STEPS = [];
@@ -215,8 +222,8 @@ function renderStory() {
       const toIso = next ? new Date(next.t - DAY).toISOString().slice(0, 10) : '1999-12-31';
       const u = unitOn(SELF, e.start);
       const [cc, cl] = CONF[e.confidence] || ['c-inf', e.confidence];
-      const primary = e.quotes.filter((q) => !SECONDARY.has(IDX.sources[q.source_id]?.kind));
-      const secondary = e.quotes.filter((q) => SECONDARY.has(IDX.sources[q.source_id]?.kind));
+      const primary = e.kind === 'unit' ? e.quotes : e.quotes.filter((q) => !SECONDARY.has(IDX.sources[q.source_id]?.kind));
+      const secondary = e.kind === 'unit' ? [] : e.quotes.filter((q) => SECONDARY.has(IDX.sources[q.source_id]?.kind));
       const cross = (crossAt.get(e.event_id) || []);
       html += `<article class="step" data-i="${i}">
         <div class="date">${esc(e.date)}</div>
@@ -247,7 +254,7 @@ function renderStory() {
 }
 
 function crossHtml(c) {
-  const other = c.soldiers.find((x) => x !== SELF), on = first(soldier(other).name);
+  const other = c.soldiers.find((x) => x !== SELF), on = who(other);
   const title = c.human_note ? c.human_note.title : (c.tier === 'likely' ? 'within about 10 km' : 'possibly within 10 km');
   const text = c.human_note ? c.human_note.text : c.note;
   return `<aside class="cross" data-other="${other}"><div class="crossh">✦ Close by · ${esc(title)}</div><p>${esc(text)}</p>
@@ -531,7 +538,7 @@ function facePin(q, id, grey, text, dx = 0) {
   const src = grey ? greyFace(id) : im;
   if (src) { const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height, s = Math.max(2 * r / iw, 2 * r / ih);
     ctx.drawImage(src, x - iw * s / 2, y - ih * s / 2, iw * s, ih * s); }
-  if (!src) { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(first(soldier(id).name)[0], x, y); }
+  if (!src) { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(isUnit(id) ? (soldier(id).short.match(/\d+/)?.[0] || '•') : first(soldier(id).name)[0], x, y); }
   ctx.restore();
   ctx.restore();
   if (text) label(text, x + r + 7, y + 4, `12px ${C['--f-type']}`, grey ? C['--muted'] : C['--ink'], { tries: [[x + r + 7, y + 4], [x - r - 7 - ctx.measureText(text).width, y + 4], [x - 20, y - r - 6]] });
@@ -617,12 +624,12 @@ function drawNow() {
     const at = positionAt(o.id, curT); if (!at) continue;
     const km = Math.round(d3.geoDistance(me, at.p) * 6371);
     others.push({ o, at, km });
-    const q = P(at.p), lab = `${first(o.name)}, ${ageAt(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
+    const q = P(at.p), lab = isUnit(o.id) ? who(o.id) : `${first(o.name)}, ${ageAt(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
     if (q && vis(at.p) && q[0] > 0 && q[0] < W && q[1] > 0 && q[1] < H) greyPins.push({ q, id: o.id, text: lab });
-    else edgePin(me, at.p, o.id, `${first(o.name)}: ${at.name}, ${km.toLocaleString()} km`);
+    else edgePin(me, at.p, o.id, `${who(o.id)}: ${at.name}, ${km.toLocaleString()} km`);
   }
   const meQ = me && P(me);
-  if (meQ && vis(me)) facePin(meQ, SELF, false, `${first(soldier(SELF).name)}, ${ageAt(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
+  if (meQ && vis(me)) facePin(meQ, SELF, false, isUnit(SELF) ? who(SELF) : `${first(soldier(SELF).name)}, ${ageAt(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
   for (const f of greyPins) facePin(f.q, f.id, true, f.text, meQ && Math.hypot(f.q[0] - meQ[0], f.q[1] - meQ[1]) < 40 ? -40 : 0);
   // Current place: name and its written date, then landmark names where there's room.
   if (active >= 0) {
@@ -643,7 +650,7 @@ function drawNow() {
       if (rr < Math.min(W, H) * 0.45) { ctx.save(); ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = C['--gold']; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); ctx.setLineDash([]);
         ctx.restore(); label('✦ Close by', cx - 36, cy + rr + 16, `600 12px ${C['--f-type']}`, C['--gold'], { tries: [[cx - 36, cy + rr + 16], [cx - 36, cy - rr - 6]] }); } }
   }
-  $('capOther').textContent = others.length ? others.map(({ o, at, km }) => `${first(o.name)}: ${at.name}, ${km < 5 ? 'same place' : 'about ' + km.toLocaleString() + ' km away'}`).join(' · ') : '';
+  $('capOther').textContent = others.length ? others.map(({ o, at, km }) => `${who(o.id)}: ${at.name}, ${km < 5 ? 'same place' : 'about ' + km.toLocaleString() + ' km away'}`).join(' · ') : '';
   updateScale();
 }
 
@@ -731,7 +738,7 @@ function onScroll() {
   if (!anim && !userView) follow(camera(prog));
   const s = STEPS[idx];
   $('capDate').textContent = curT == null ? (STEPS[0] ? 'Before ' + STEPS[0].e.date : '') : HELD ? fmtDate(curT) : s.e.date;
-  $('capAge').textContent = curT != null ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
+  $('capAge').textContent = curT != null && !isUnit(SELF) ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
   $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : (SELF ? soldier(SELF).name : '');
   tlMark();
   if (!anim) draw();
