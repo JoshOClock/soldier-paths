@@ -23,7 +23,7 @@
     <ul>
       <li>His service file from Library and Archives Canada, or his discharge certificate</li>
       <li>Newspaper clippings, obituaries, letters home</li>
-      <li>Photos, especially with writing on the back</li>
+      <li>Photos, especially with writing on the back. Give them to your AI too, so it can caption them and say which part of his story each belongs to.</li>
       <li>What the family remembers: his unit, where he went, stories he told</li>
     </ul>
     <p class="small">Photos of pages are fine. Leave out anything about people who are still living.</p>
@@ -51,11 +51,13 @@
     <p>Submissions are read by a person before anything goes on the site. Each fact keeps a note of where it came from, and anything from family memory is marked as such.</p>
     <label class="consent"><input type="checkbox" id="ok1"> The soldier has died, and nothing here is about a living person except my name and relationship.</label>
     <label class="consent"><input type="checkbox" id="ok2"> I'm happy for this to be shown publicly on Soldier Paths with the sources listed.</label>
+    <p class="small" id="sendNote"></p>
     <div class="row">
+      <button type="button" id="email" class="cbtn" disabled hidden>Email it with photos</button>
       <button type="button" id="download" class="cbtn" disabled>Download the file</button>
       <button type="button" id="github" class="cbtn ghost" disabled>Send through GitHub</button>
     </div>
-    <p class="small">"Send through GitHub" copies your file and opens a submission form; paste it in there (it needs a free GitHub account, and the form is public). Or download the file and send it to whoever pointed you to this site.</p>
+    <p class="small">Photos: send the original files, not screenshots, with the same file names your AI listed. The code in the email subject ties them to your file. "Send through GitHub" is public and needs a free GitHub account; use email for anything private.</p>
   </section>
 </main>
 <script src="data/vendor/d3.min.js"></script>

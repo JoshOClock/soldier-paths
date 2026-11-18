@@ -1,10 +1,12 @@
 // Turn a submission from the "Add a soldier" page into rows in data/*.csv.
-//   node scripts/import_submission.mjs path/to/name.soldier.json [--public] [--dry-run]
+//   node scripts/import_submission.mjs path/to/name.soldier.json [--photos folder] [--public] [--dry-run]
+// --photos: the folder holding the photos that came with it (matched by file name, any letter case).
 // Adds the soldier (private unless --public), his places, sources, events, quotes and postings.
 // Units are matched to data/units.csv by name; unknown units are added as new top-level units
 // for a person to place in the hierarchy later. Everything arrives with status "family" if the
 // submitter marked it family, otherwise "ai_draft", since the submitter's AI wrote it.
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { parseCsv } from './lib/csv.mjs';
 import { parseDate } from './lib/dates.mjs';
@@ -12,8 +14,9 @@ import { extractJson, validate } from '../site/submit/check.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const DATA = path.join(ROOT, 'data');
-const args = process.argv.slice(2), file = args.find((a) => !a.startsWith('--'));
+const args = process.argv.slice(2), file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--photos');
 const PUBLIC = args.includes('--public'), DRY = args.includes('--dry-run');
+const PHOTOS = args.includes('--photos') ? args[args.indexOf('--photos') + 1] : null;
 if (!file) { console.error('usage: node scripts/import_submission.mjs file.json [--public] [--dry-run]'); process.exit(1); }
 
 const sub = extractJson(fs.readFileSync(file, 'utf8'));
@@ -27,7 +30,7 @@ const cell = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test
 const add = {};
 const push = (table, row) => { (add[table] ||= []).push(row); };
 
-const T = Object.fromEntries(['soldiers', 'places', 'sources', 'events', 'quotes', 'postings', 'units'].map((n) => [n, read(n)]));
+const T = Object.fromEntries(['soldiers', 'places', 'sources', 'events', 'quotes', 'postings', 'units', 'media'].map((n) => [n, read(n)]));
 const has = (table, key, id) => T[table].rows.some((r) => r[key] === id) || (add[table] || []).some((r) => r[key] === id);
 
 const so = sub.soldier;
@@ -70,8 +73,10 @@ const unitIdFor = (name) => {
 });
 
 const KIND = { birth: 'birth', enlistment: 'enlistment', promotion: 'promotion', award: 'award', discharge: 'discharge', death: 'death', wounded: 'wounded' };
+const eventIdByIndex = {};
 stops.forEach((e, i) => {
   const eid = `${sid}-${String(i + 1).padStart(2, '0')}`;
+  eventIdByIndex[e._i + 1] = eid;
   push('events', { event_id: eid, soldier_id: sid, kind: KIND[e.kind] || 'location', date: e.date, place_id: placeFor(e.place), unit_id: '', detail: e.what, source_id: srcMap[e.source], confidence: conf(e.confidence), status: status(e.confidence), note: e.note || '' });
   if (e.quote) push('quotes', { quote_id: `${eid}-q1`, event_id: eid, source_id: srcMap[e.source], page_ref: e.page || '', label: `From ${sub.sources.find((s) => s.id === e.source)?.title || 'the source'}`, text: e.quote });
 });
@@ -87,10 +92,25 @@ const metNotes = [];
 });
 if (metNotes.length) add.soldiers[0].note += `. People he met: ${metNotes.join('; ')}`;
 
+// Photos: matched to the files sent with it, resized into data/media and attached to their events.
+const toResize = [];
+if ((sub.photos || []).length) {
+  const have = PHOTOS && fs.existsSync(PHOTOS) ? fs.readdirSync(PHOTOS) : [];
+  sub.photos.forEach((ph, i) => {
+    const found = have.find((f) => f.toLowerCase() === String(ph.file).toLowerCase());
+    if (!found) { console.warn(`photo not found${PHOTOS ? ' in ' + PHOTOS : ' (use --photos folder)'}: ${ph.file}`); return; }
+    const out = `${sid}-${String(i + 1).padStart(2, '0')}.jpg`;
+    toResize.push([path.join(PHOTOS, found), path.join(DATA, 'media', out)]);
+    push('media', { media_id: `m-${sid}-${i + 1}`, soldier_id: sid, event_id: ph.event ? (eventIdByIndex[ph.event] || '') : '', file: out, kind: ph.event ? 'photo' : 'portrait', caption: ph.caption || '', credit: ph.credit === 'family' || !ph.credit ? `${sub.submitted_by?.name || 'Family'} (family photo)` : ph.credit, source_id: '', url: '', rights: 'family' });
+  });
+}
+if (sub.submission_code) add.soldiers[0].note += ` [${sub.submission_code}]`;
+
 for (const [table, rows] of Object.entries(add)) {
   const { p, head } = T[table];
   const lines = rows.map((r) => head.map((h) => cell(r[h])).join(','));
   console.log(`${table}: +${rows.length}`);
   if (!DRY) { const t = fs.readFileSync(p, 'utf8'); fs.writeFileSync(p, (t.endsWith('\n') ? t : t + '\n') + lines.join('\n') + '\n'); }
 }
+if (!DRY) for (const [a, b] of toResize) execFileSync('python3', [path.join(ROOT, 'scripts', 'resize_image.py'), a, b], { stdio: 'inherit' });
 console.log(DRY ? 'Dry run: nothing written.' : `Added ${so.name} as ${sid} (${PUBLIC ? 'public' : 'private'}). Run npm run build to check.`);
