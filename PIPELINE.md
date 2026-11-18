@@ -74,7 +74,9 @@ Where to look, in this order (WebSearch, then fetch the pages):
 
 Rules:
 1. **Same man, or nothing.** Only use a record when it matches on service number, or on full name plus at least two
-   of: birth date or year, hometown, unit, next of kin. If it's a maybe, put it in the summary for Josh as a
+   of: birth date or year, hometown, unit, rank, next of kin, or something already in his data (an award, a date,
+   a place). A full name with a middle name counts for more than "John Smith": an uncommon full name plus one detail
+   is enough when nothing in the record contradicts the data. If it's a maybe, put it in the summary for Josh as a
    possible match with its link, and add nothing to the data.
 2. Add only. Never change or remove a row a family or another run wrote. If a record disagrees with an existing row,
    add a row to `data/conflicts.csv` and say so in the summary.
