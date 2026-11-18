@@ -64,6 +64,12 @@ export function validate(s, parseDate) {
     if (e.quote && e.quote.split(/\s+/).length > 40) warnings.push(`${label}: the quote is long. Keep quotes short, a sentence or two.`);
     if (d) stops.push({ ...e, _lo: d.lo, _hi: d.hi, _i: i });
   });
+  (Array.isArray(s.people_met) ? s.people_met : []).forEach((m, i) => {
+    const label = `Person met ${i + 1}${m.name ? ` (${m.name})` : ''}`;
+    need(m.name, `${label} has no name.`);
+    if (m.date) warn(parseDate(m.date), `${label}: the date "${m.date}" isn't in a form the site understands.`);
+    need(m.source && srcIds.has(m.source), `${label} needs a "source" that matches one in the sources list.`);
+  });
   stops.sort((a, b) => a._lo - b._lo || a._i - b._i);
   // Big jumps between consecutive dated stops are usually a wrong date or a wrong place.
   for (let i = 1; i < stops.length; i++) {
