@@ -240,3 +240,6 @@ a{color:var(--route)}
 .mapbox:hover .phint{opacity:1}
 @media (hover:none){.phint{display:none}}
 .tl{cursor:default}
+.step{cursor:pointer}
+.step:not(.on):hover h3{color:var(--route)}
+.step.on{cursor:default}

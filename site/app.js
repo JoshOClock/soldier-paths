@@ -112,7 +112,8 @@ function select(id, keepT) {
   // Keep the globe where it is; go() then glides from the current view to the new soldier's stop.
   active = -2; curT = null; switching = true;
   tlDraw();
-  if (keepT != null) requestAnimationFrame(() => seek(keepT)); else { scrollTo(0, 0); onScroll(); }
+  // Carry the date over when switching between soldiers; otherwise start at his first story.
+  requestAnimationFrame(() => { if (keepT != null) seek(keepT); else if (STEPS.length) seekStep(0); else { scrollTo(0, 0); onScroll(); } });
 }
 
 // ---------------- story ----------------
@@ -737,6 +738,20 @@ function onScroll() {
 }
 // Jump the story to the stop in force on date t (used when switching soldiers), keeping t as the date shown.
 let HELD = null;
+// Bring story i to the reading line (clicking a story, or opening a soldier).
+function seekStep(i) {
+  const a = STEPS[i]; if (!a) return;
+  HELD = null;
+  scrollTo({ top: Math.round(a.el.getBoundingClientRect().top + scrollY - lineY() + 2), behavior: 'auto' });
+  for (let k = 0; k < 2; k++) { const err = a.el.getBoundingClientRect().top - (lineY() - 2); if (Math.abs(err) < 1) break; scrollBy(0, Math.round(err)); }
+  onScroll();
+}
+// Clicking anywhere on a story (but not on its links, buttons or terms) jumps to it.
+$('story').addEventListener('click', (e) => {
+  if (e.target.closest('a,button,abbr,summary,details,input') || String(getSelection())) return;
+  const el = e.target.closest('.step'); if (!el) return;
+  const i = +el.dataset.i; if (i !== active) seekStep(i);
+});
 function seek(t, smooth) {
   let i = -1; STEPS.forEach((x, k) => { if (x.t <= t + 1e-6) i = k; });
   HELD = { t, idx: i };
