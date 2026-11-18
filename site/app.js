@@ -350,7 +350,7 @@ function meanwhile(from, to) {
   rows.sort((a, b) => a.x.t - b.x.t);
   return `<aside class="meanwhile"><div class="mwh">Meanwhile</div>${rows.map(({ id, x, more }) => more
     ? `<button type="button" class="mw more" data-other="${id}" data-t="${x.t}">+ ${more} more for ${esc(who(id))}</button>`
-    : `<button type="button" class="mw" data-other="${id}" data-t="${x.t}">${FACES[id] ? `<img src="${esc(soldier(id).face)}" alt="" width="24" height="24">` : `<span class="mwi">${isUnit(id) ? '▲' : esc(who(id)[0])}</span>`}<span><b>${esc(who(id))}</b> · ${esc(x.e.date)} <em class="rel">${esc(later(x.t - from))}</em><br>${esc(x.e.detail)} <i>${esc(place(x.e.place_id).name)}</i></span></button>`).join('')}</aside>`;
+    : `<button type="button" class="mw" data-other="${id}" data-t="${x.t}">${FACES[id] ? `<img src="${esc(soldier(id).face)}" alt="" width="24" height="24">` : `<span class="mwi${isUnit(id) ? ' u' : ''}">${isUnit(id) ? esc(unitTag(id)) : esc(who(id)[0])}</span>`}<span><b>${esc(who(id))}</b> · ${esc(x.e.date)} <em class="rel">${esc(later(x.t - from))}</em><br>${esc(x.e.detail)} <i>${esc(place(x.e.place_id).name)}</i></span></button>`).join('')}</aside>`;
 }
 function crossHtml(c) {
   const other = c.soldiers.find((x) => x !== SELF), on = who(other);
@@ -624,7 +624,30 @@ function greyFace(id) {
   const x = c.getContext('2d'); x.filter = 'grayscale(1)'; x.drawImage(im, 0, 0);
   return (GREY[id] = c);
 }
+// A unit's short tag for its map pin: the number in its name ("2nd", "23rd"), or its initials.
+function unitTag(id) {
+  const n = soldier(id).name, m = n.match(/\b(\d+(?:st|nd|rd|th))\b/i);
+  return m ? m[1].toLowerCase() : n.replace(/\(.*?\)|,.*$/g, '').split(/\s+/).filter((w) => /^[A-Z]/.test(w)).map((w) => w[0]).join('').slice(0, 3);
+}
+// A unit's pin: a rounded box with its short tag, on a stalk.
+function unitPin(q, id, grey) {
+  const h = 26, x = q[0], y = q[1] - h / 2 - 12, tag = unitTag(id), col = grey ? C['--muted'] : C['--route'];
+  ctx.save();
+  ctx.font = `700 13px ${C['--f-display']}`;
+  const w = Math.max(30, ctx.measureText(tag).width + 16);
+  PLACED.push([x - w / 2 - 3, y - h / 2 - 3, w + 6, h + 18]);
+  if (grey) ctx.globalAlpha = 0.6;
+  ctx.beginPath(); ctx.moveTo(x - 6, y + h / 2 - 2); ctx.lineTo(q[0], q[1]); ctx.lineTo(x + 6, y + h / 2 - 2); ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x - w / 2 - 2.5, y - h / 2 - 2.5, w + 5, h + 5, 8); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x - w / 2, y - h / 2, w, h, 6); ctx.fillStyle = C['--paper']; ctx.fill();
+  ctx.fillStyle = grey ? C['--muted'] : C['--ink']; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tag, x, y + 1);
+  ctx.restore();
+  return { x, y, r: w / 2 };
+}
 function facePin(q, id, grey, text, dx = 0) {
+  if (isUnit(id)) { const u = unitPin([q[0] + dx, q[1]], id, grey);
+    if (text) label(text, u.x + u.r + 7, u.y + 4, `12px ${C['--f-type']}`, grey ? C['--muted'] : C['--ink'], { tries: [[u.x + u.r + 7, u.y + 4], [u.x - u.r - 7 - ctx.measureText(text).width, u.y + 4], [u.x - 20, u.y - 22]] });
+    return; }
   const r = 15, x = q[0] + dx, y = q[1] - r - 12;
   PLACED.push([x - r - 3, y - r - 3, 2 * r + 6, 2 * r + 18]);
   ctx.save();
