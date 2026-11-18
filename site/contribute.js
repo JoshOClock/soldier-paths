@@ -5,6 +5,8 @@ import { extractJson, validate } from './submit/check.mjs';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const REPO = 'JoshOClock/soldier-paths';
+// Where emailed submissions go. Empty hides the email button.
+const SUBMIT_EMAIL = '';
 let current = null;
 
 fetch('submit/prompt.md').then((r) => r.text()).then((t) => { $('prompt').textContent = t; });
@@ -40,6 +42,10 @@ function check() {
   gate();
 }
 
+function photosFor(s, n) {
+  const ph = (s.photos || []).filter((p) => p.event === n);
+  return ph.length ? `<br>📷 ${ph.map((p) => esc(p.file)).join(', ')}` : '';
+}
 function preview(s, stops) {
   const so = s.soldier || {};
   const units = (s.units || []).map((u) => u.name).filter(Boolean);
@@ -48,7 +54,8 @@ function preview(s, stops) {
   return `<div class="pv"><div><svg id="pvmap" viewBox="0 0 480 360" role="img" aria-label="Preview of the route"></svg></div><div>
     <h3>${esc(so.name || 'No name')}</h3>
     <p class="meta">${[so.rank, so.service_number, so.born?.date && `born ${so.born.date}${so.born.place ? ', ' + so.born.place : ''}`].filter(Boolean).map(esc).join(' · ')}${units.length ? '<br>' + units.map(esc).join(' → ') : ''}</p>
-    <ol>${stops.map((e) => `<li><span class="d">${esc(e.date)}</span>${esc(e.what)} <i>${esc(e.place?.name)}</i><br><span class="c">${esc(conf[e.confidence] || e.confidence || '')}${src[e.source] ? ' · ' + esc(src[e.source].title) : ''}</span></li>`).join('')}</ol>
+    <ol>${stops.map((e) => `<li><span class="d">${esc(e.date)}</span>${esc(e.what)} <i>${esc(e.place?.name)}</i><br><span class="c">${esc(conf[e.confidence] || e.confidence || '')}${src[e.source] ? ' · ' + esc(src[e.source].title) : ''}${photosFor(s, e._i + 1)}</span></li>`).join('')}</ol>
+    ${(s.photos || []).length ? `<p class="meta">Photos to send with it: ${(s.photos || []).map((p) => esc(p.file)).join(', ')}</p>` : ''}
   </div></div>`;
 }
 
@@ -76,19 +83,41 @@ async function drawMap(stops) {
 
 function gate() {
   const ok = !!current && $('ok1').checked && $('ok2').checked;
-  $('download').disabled = !ok; $('github').disabled = !ok;
+  $('download').disabled = !ok; $('github').disabled = !ok; $('email').disabled = !ok || !SUBMIT_EMAIL;
+  const ph = (current?.photos || []).map((p) => p.file);
+  $('sendNote').innerHTML = current ? `Your code is <b>${esc(code())}</b>. ${ph.length ? `Attach the file and these ${ph.length} photo${ph.length > 1 ? 's' : ''}: ${ph.map(esc).join(', ')}.` : 'Attach the file, and any photos.'}${SUBMIT_EMAIL ? '' : ' Email sending is coming soon; for now, download the file and send it with your photos to whoever pointed you to this site.'}` : '';
+}
+// A short code ties the file to the email and photos sent with it.
+function code() {
+  if (!current) return '';
+  if (!current.submission_code) {
+    const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = crypto.getRandomValues(new Uint8Array(5));
+    current.submission_code = 'SP-' + [...r].map((x) => a[x % a.length]).join('');
+  }
+  return current.submission_code;
 }
 function fileText() {
+  code();
   return JSON.stringify({ ...current, submitted_at: new Date().toISOString().slice(0, 10) }, null, 2);
 }
 function fileName() {
   const n = (current.soldier?.name || 'soldier').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  return `${n}.soldier.json`;
+  return `${n}-${code()}.soldier.json`;
 }
 $('download').addEventListener('click', () => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([fileText()], { type: 'application/json' }));
   a.download = fileName(); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+$('email').hidden = false;
+if (!SUBMIT_EMAIL) { $('email').textContent = 'Email it with photos (coming soon)'; $('email').title = 'Sending by email is coming soon. For now, download the file and send it with your photos to whoever pointed you to this site.'; }
+$('email')?.addEventListener('click', () => {
+  // Download the file first, then open an email with the code in the subject; the person attaches the file and photos.
+  $('download').click();
+  const name = current.soldier?.name || 'a soldier';
+  const photos = (current.photos || []).map((p) => `- ${p.file}: ${p.caption || ''}`).join('\n');
+  const body = `Soldier: ${name}\nCode: ${code()}\nFrom: ${current.submitted_by?.name || ''} (${current.submitted_by?.relationship || ''})\n\nAttached: ${fileName()}${photos ? '\n\nPhotos attached:\n' + photos : ''}\n\n(Please attach the downloaded file and the photos before sending.)`;
+  location.href = `mailto:${SUBMIT_EMAIL}?subject=${encodeURIComponent(`Soldier Paths: ${name} [${code()}]`)}&body=${encodeURIComponent(body)}`;
 });
 $('github').addEventListener('click', async () => {
   await copy(fileText());

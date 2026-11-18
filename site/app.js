@@ -718,14 +718,17 @@ function go(i) {
   if (anim) anim.stop();
   if (reduce) { view = { c: target.c, k: target.k }; prog = target.p; draw(); return; }
   const ic = d3.geoInterpolate(from.c, target.c), dist = d3.geoDistance(from.c, target.c);
-  const peak = Math.max(from.k, target.k, dist * 6371 * 0.6);
-  const dur = Math.min(1600, 500 + dist * 6371 * 0.25 + Math.abs(Math.log(target.k / from.k)) * 100);
+  // Longer moves take longer, but on a log scale so a trip across the Atlantic is slow, not endless.
+  const km = dist * 6371, peak = Math.max(from.k, target.k, km * 0.5);
+  const dur = Math.min(3600, (km < 30 ? 700 : 900 + 900 * Math.log10(km / 30)) + Math.abs(Math.log(target.k / from.k)) * 120);
+  const lift = Math.max(0, Math.log(peak) - Math.max(Math.log(from.k), Math.log(target.k)));
   anim = d3.timer((el) => {
-    const t = Math.min(1, el / dur), e = d3.easeCubicInOut(t);
-    view.c = ic(e);
+    const t = Math.min(1, el / dur), e = d3.easeSinInOut(t);
+    // Rise first, travel while high, then settle: the centre moves mostly in the middle of the flight.
+    const ec = lift > 0.3 ? d3.easeCubicInOut(Math.max(0, Math.min(1, (t - 0.12) / 0.76))) : d3.easeCubicInOut(t);
+    view.c = ic(ec);
     const lk = Math.log(from.k) + (Math.log(target.k) - Math.log(from.k)) * e;
-    const bump = Math.sin(Math.PI * e) * Math.max(0, Math.log(peak) - Math.max(Math.log(from.k), Math.log(target.k)));
-    view.k = Math.exp(lk + bump);
+    view.k = Math.exp(lk + Math.sin(Math.PI * e) * lift);
     if (t >= 1) { anim.stop(); anim = null; prog = target.p; onScroll(); }
     draw();
   });

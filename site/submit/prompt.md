@@ -15,7 +15,8 @@ Rules:
 7. Units: write the full unit name as the documents give it, for example "2nd Canadian Anti-Tank Regiment, RCA" or "Sherbrooke Fusilier Regiment". Include battery, company or troop if given.
 8. Do not include anything about living people except my name and how I'm related.
 9. If documents disagree, include both versions as separate events and say so in "note".
-10. If he ever mentioned meeting or seeing someone he knew (a friend from home, a brother, a cousin, someone from his town), put each one in "people_met", even if the date or place is rough. Only include it if a document or the family says so; don't guess.
+10. If I give you photos or scans, list each one in "photos": its exact file name as I gave it, a caption (what or who is in it, and anything written on it), its date if known, and the event it belongs to as a number: its position in your "events" list, starting at 1. Use 0 for a portrait of him. Don't describe photos I haven't given you.
+11. If he ever mentioned meeting or seeing someone he knew (a friend from home, a brother, a cousin, someone from his town), put each one in "people_met", even if the date or place is rough. Only include it if a document or the family says so; don't guess.
 
 Format:
 
@@ -51,6 +52,9 @@ Format:
   ],
   "people_met": [
     { "name": "", "who_they_were": "e.g. a friend from Lacombe, his cousin", "date": "", "place": { "name": "", "lat": 0, "lon": 0, "precision_km": 20 }, "what": "One line: what the family or record says", "source": "s1", "confidence": "family" }
+  ],
+  "photos": [
+    { "file": "IMG_1234.jpg", "caption": "", "date": "", "event": 0, "credit": "family" }
   ],
   "sources": [
     { "id": "s1", "kind": "service_file | newspaper | letter | photo | family | book | website | other", "title": "", "date": "", "url": "", "where_held": "" }

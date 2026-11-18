@@ -70,6 +70,12 @@ export function validate(s, parseDate) {
     if (m.date) warn(parseDate(m.date), `${label}: the date "${m.date}" isn't in a form the site understands.`);
     need(m.source && srcIds.has(m.source), `${label} needs a "source" that matches one in the sources list.`);
   });
+  (Array.isArray(s.photos) ? s.photos : []).forEach((ph, i) => {
+    const label = `Photo ${i + 1}${ph.file ? ` (${ph.file})` : ''}`;
+    need(ph.file, `${label} has no file name. Use the photo's file name exactly as it is on your computer or phone.`);
+    warn(ph.caption, `${label} has no caption.`);
+    warn(Number.isInteger(ph.event) && ph.event >= 0 && ph.event <= events.length, `${label}: "event" should be the number of an event in the list (1 to ${events.length}), or 0 for a portrait.`);
+  });
   stops.sort((a, b) => a._lo - b._lo || a._i - b._i);
   // Big jumps between consecutive dated stops are usually a wrong date or a wrong place.
   for (let i = 1; i < stops.length; i++) {
