@@ -61,8 +61,8 @@ function select(id, keepT) {
   history.replaceState(null, '', '#' + id);
   document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.id === id));
   renderStory();
-  active = -2; curT = null;
-  view = { c: [-60, 50], k: 4800 }; prog = -1;
+  // Keep the globe where it is; go() then glides from the current view to the new soldier's stop.
+  active = -2; curT = null; switching = true;
   tlDraw();
   if (keepT != null) requestAnimationFrame(() => seek(keepT)); else { scrollTo(0, 0); onScroll(); }
 }
@@ -294,6 +294,7 @@ function label(text, x, y, font, fill, opts = {}) {
   }
   return false;
 }
+let switching = false;
 let W = 0, H = 0, DPR = 1, view = { c: [-60, 50], k: 4800 }, prog = -1, anim = null, HITS = [], userView = false;
 const C = {};
 function readColors() { ['--sea', '--land', '--border', '--grat', '--route', '--route-soft', '--ink', '--paper', '--muted', '--gold', '--f-type', '--f-display'].forEach((k) => { C[k] = css(k); }); }
@@ -441,6 +442,8 @@ function go(i) {
   const s = STEPS[i] || null;
   const target = s ? { c: s.p, k: s.k, p: i } : { c: [-60, 50], k: 4800, p: -1 };
   const from = { c: view.c.slice(), k: view.k, p: prog };
+  // After a tab switch the route belongs to a different soldier: show it up to his stop at once, only the view moves.
+  if (switching) { from.p = target.p; prog = target.p; switching = false; }
   if (anim) anim.stop();
   if (reduce) { view = { c: target.c, k: target.k }; prog = target.p; draw(); return; }
   const ic = d3.geoInterpolate(from.c, target.c), dist = d3.geoDistance(from.c, target.c);
