@@ -83,9 +83,9 @@ async function drawMap(stops) {
 
 function gate() {
   const ok = !!current && $('ok1').checked && $('ok2').checked;
-  $('download').disabled = !ok; $('github').disabled = !ok; if ($('email')) $('email').disabled = !ok;
+  $('download').disabled = !ok; $('github').disabled = !ok; $('email').disabled = !ok || !SUBMIT_EMAIL;
   const ph = (current?.photos || []).map((p) => p.file);
-  $('sendNote').innerHTML = current ? `Your code is <b>${esc(code())}</b>. ${ph.length ? `Attach the file and these ${ph.length} photo${ph.length > 1 ? 's' : ''}: ${ph.map(esc).join(', ')}.` : 'Attach the file, and any photos.'}` : '';
+  $('sendNote').innerHTML = current ? `Your code is <b>${esc(code())}</b>. ${ph.length ? `Attach the file and these ${ph.length} photo${ph.length > 1 ? 's' : ''}: ${ph.map(esc).join(', ')}.` : 'Attach the file, and any photos.'}${SUBMIT_EMAIL ? '' : ' Email sending is coming soon; for now, download the file and send it with your photos to whoever pointed you to this site.'}` : '';
 }
 // A short code ties the file to the email and photos sent with it.
 function code() {
@@ -109,7 +109,8 @@ $('download').addEventListener('click', () => {
   a.href = URL.createObjectURL(new Blob([fileText()], { type: 'application/json' }));
   a.download = fileName(); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
-if (SUBMIT_EMAIL) $('email').hidden = false;
+$('email').hidden = false;
+if (!SUBMIT_EMAIL) { $('email').textContent = 'Email it with photos (coming soon)'; $('email').title = 'Sending by email is coming soon. For now, download the file and send it with your photos to whoever pointed you to this site.'; }
 $('email')?.addEventListener('click', () => {
   // Download the file first, then open an email with the code in the subject; the person attaches the file and photos.
   $('download').click();
