@@ -1,0 +1,14 @@
+{
+  "name": "soldier-paths",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "npm run build && npx --yes serve site"
+  },
+  "devDependencies": {
+    "d3": "^7.9.2",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  }
+}

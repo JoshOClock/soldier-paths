@@ -1,0 +1,60 @@
+event_id,soldier_id,kind,date,place_id,unit_id,detail,source_id,confidence,status,note
+clayton-brown-01,clayton-brown,location,Jan 1920,red-deer,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-02,clayton-brown,location,Sep 1939,calgary,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-03,clayton-brown,location,1940,edmonton,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-04,clayton-brown,location,May 1940,camp-shilo,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-05,clayton-brown,location,Aug 1940,halifax,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-06,clayton-brown,location,Aug 1940,greenock,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-07,clayton-brown,location,1940,farnborough,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-08,clayton-brown,location,1941,bognor-regis,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-09,clayton-brown,location,1942,steyning,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-10,clayton-brown,location,Jun 1944,dover,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-11,clayton-brown,location,Jun 1944,london,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-12,clayton-brown,location,8 Jul 1944,normandy-coast,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-13,clayton-brown,location,Jul 1944,carpiquet,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-14,clayton-brown,location,20 Jul 1944,ifs,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-15,clayton-brown,location,Aug 1944,falaise,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-16,clayton-brown,location,Aug 1944,elbeuf,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-17,clayton-brown,location,31 Aug 1944,rouen,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-18,clayton-brown,location,1 Sep 1944,dieppe,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-19,clayton-brown,location,Sep 1944,dunkirk,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-20,clayton-brown,location,Sep 1944,antwerp,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-21,clayton-brown,location,Oct 1944,south-beveland,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-22,clayton-brown,location,Nov 1944,bergen-op-zoom,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-23,clayton-brown,location,Nov 1944,nijmegen,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-24,clayton-brown,location,Winter 1944,groesbeek,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-25,clayton-brown,location,8 Feb 1945,cleve,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-26,clayton-brown,location,Mar 1945,hochwald,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-27,clayton-brown,location,7 Mar 1945,xanten,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-28,clayton-brown,location,28 Mar 1945,rees,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-29,clayton-brown,location,Apr 1945,groningen,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-30,clayton-brown,location,May 1945,oldenburg,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-31,clayton-brown,location,May 1945,frisian-islands,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-32,clayton-brown,location,Summer 1945,eccleshall,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-33,clayton-brown,location,1945,aldershot,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-34,clayton-brown,location,Aug 1945,greenock,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-35,clayton-brown,location,Aug 1945,halifax,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-36,clayton-brown,location,12 Sep 1945,calgary,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+clayton-brown-37,clayton-brown,location,1946 on,lacombe,,,src-prototype-brown,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-01,gordon-sweet,location,Feb 1914,yellow-grass,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-02,gordon-sweet,location,1924 to 1940,lacombe,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-03,gordon-sweet,location,May 1940,edmonton,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-04,gordon-sweet,location,1940 to 1941,sarcee-camp,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-05,gordon-sweet,location,Oct 1941,edmonton,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-06,gordon-sweet,location,Nov 1941,st-johns-que,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-07,gordon-sweet,location,1942,nanaimo,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-08,gordon-sweet,location,Oct 1942,camp-borden,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-09,gordon-sweet,location,Jun 1943,liverpool,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-10,gordon-sweet,location,1943 to 1944,england,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-11,gordon-sweet,location,Jun 1944,juno-beach,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-12,gordon-sweet,location,Jul 1944,caen,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-13,gordon-sweet,location,Aug 1944,falaise,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-14,gordon-sweet,location,28 Aug 1944,the-seine,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-15,gordon-sweet,location,Fall 1944,antwerp,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-16,gordon-sweet,location,Winter 1944,nijmegen,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-17,gordon-sweet,location,Feb 1945,cleve,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-18,gordon-sweet,location,29 Mar 1945,rees,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-19,gordon-sweet,location,Apr 1945,apeldoorn,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-20,gordon-sweet,location,1 Feb 1946,canada,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-21,gordon-sweet,location,Apr 1946,calgary,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file
+gordon-sweet-22,gordon-sweet,location,1946 on,lacombe,,,src-prototype-sweet,family,family,Imported from Two Grandfathers' War prototype; confirm against service file

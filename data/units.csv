@@ -1,0 +1,8 @@
+unit_id,name,short_name,kind,parent_id,war,project44_url,note
+first-cdn-army,First Canadian Army,1 Cdn Army,army,,WW2,,
+ii-cdn-corps,II Canadian Corps,2 Cdn Corps,corps,first-cdn-army,WW2,,
+2-cdn-inf-div,2nd Canadian Infantry Division,2 Cdn Div,division,ii-cdn-corps,WW2,,
+2-cdn-atk-regt,2nd Anti-Tank Regiment RCA,2 Cdn A-Tk Regt,regiment,2-cdn-inf-div,WW2,,
+23-atk-bty,23rd Anti-Tank Battery,23 Bty,battery,2-cdn-atk-regt,WW2,,
+2-cdn-armd-bde,2nd Canadian Armoured Brigade,2 Cdn Armd Bde,brigade,first-cdn-army,WW2,,Attached to different divisions over time; record attachments in unit_parents.csv
+gordon-med-unit,RCAMC unit with 2nd Canadian Armoured Brigade (name to confirm),,field_ambulance,2-cdn-armd-bde,WW2,,Prototype calls it his field ambulance; confirm unit name from service file
