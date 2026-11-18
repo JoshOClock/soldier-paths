@@ -44,7 +44,14 @@
         "2-cdn-armd-bde"
       ],
       "rows_added": 8,
-      "note": "2nd A-Tk Regt, 23 Bty and 17 Lt Fd Amb not named in ch. XIV"
+      "note": "2nd A-Tk Regt, 23 Bty and 17 Lt Fd Amb not named in ch. XIV",
+      "soldiers_checked": [
+        "clayton-brown",
+        "gordon-sweet"
+      ],
+      "closeby_notes_added": 0,
+      "photos_added": 0,
+      "photos_note": "IWM and Wikimedia Commons item pages could not be fetched from the cloud run; ch5 photos not started"
     }
   ],
   "done": {
@@ -57,5 +64,10 @@
       "2-cdn-armd-bde",
       "17-lt-fd-amb"
     ]
-  }
+  },
+  "soldiers_checked": {
+    "clayton-brown": "2026-11-18",
+    "gordon-sweet": "2026-11-18"
+  },
+  "photos_done": []
 }
