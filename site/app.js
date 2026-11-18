@@ -725,40 +725,29 @@ function onScroll() {
   const line = lineY();
   let idx = -1;
   STEPS.forEach((s, i) => { if (s.el.getBoundingClientRect().top < line) idx = i; });
-  if (idx < 0) curT = null;
-  else {
-    const a = STEPS[idx], b = STEPS[idx + 1], ta = a.el.getBoundingClientRect().top;
-    if (!b) curT = a.t; else { const tb = b.el.getBoundingClientRect().top; const f = Math.max(0, Math.min(1, (line - ta) / ((tb - ta) || 1))); curT = a.t + f * (b.t - a.t); }
-    // He stays at the place of the last story reached; go() moves him when the next story starts.
-  }
-  if (window.__pinT != null && curT != null && Math.abs(curT - window.__pinT) < DAY) curT = window.__pinT; else window.__pinT = null;
+  // The date and place come only from the story being read: the last stop reached. Nothing is guessed in between.
+  // After switching soldiers, the date carried over is kept until the reader moves to another stop.
+  if (HELD && HELD.idx === idx) curT = HELD.t; else { HELD = null; curT = idx < 0 ? null : STEPS[idx].t; }
   go(idx);
   if (!anim && !userView) follow(camera(prog));
   const s = STEPS[idx];
-  $('capDate').textContent = curT != null ? fmtDate(curT) : (STEPS[0] ? 'Before ' + fmtDate(STEPS[0].t) : '');
+  $('capDate').textContent = curT == null ? (STEPS[0] ? 'Before ' + STEPS[0].e.date : '') : HELD ? fmtDate(curT) : s.e.date;
   $('capAge').textContent = curT != null ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
   $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : (SELF ? soldier(SELF).name : '');
   tlMark();
   if (!anim) draw();
 }
+// Jump the story to the stop in force on date t (used when switching soldiers), keeping t as the date shown.
+let HELD = null;
 function seek(t, smooth) {
-  // Scroll the story so the reading line sits at date t (used by the timeline and when switching soldiers).
-  window.__pinT = t;
   let i = -1; STEPS.forEach((x, k) => { if (x.t <= t + 1e-6) i = k; });
-  if (i < 0) { scrollTo({ top: 0, behavior: smooth && !reduce ? 'smooth' : 'auto' }); return; }
-  const a = STEPS[i], b = STEPS[i + 1], ya = a.el.getBoundingClientRect().top + scrollY;
-  let y = ya;
-  if (b && b.t > a.t) { const yb = b.el.getBoundingClientRect().top + scrollY; y = ya + Math.min(1, (t - a.t) / (b.t - a.t)) * (yb - ya); }
-  const frac = b && b.t > a.t ? Math.min(1, (t - a.t) / (b.t - a.t)) : 0;
-  scrollTo({ top: Math.round(y - lineY() + 1), behavior: smooth && !reduce ? 'smooth' : 'auto' });
+  HELD = { t, idx: i };
+  if (i < 0) { scrollTo({ top: 0, behavior: smooth && !reduce ? 'smooth' : 'auto' }); onScroll(); return; }
+  const a = STEPS[i];
+  scrollTo({ top: Math.round(a.el.getBoundingClientRect().top + scrollY - lineY() + 2), behavior: smooth && !reduce ? 'smooth' : 'auto' });
   if (!smooth || reduce) {
     // Sticky panels can shift the page slightly after a jump; measure again and correct.
-    for (let k = 0; k < 2; k++) {
-      const ta = a.el.getBoundingClientRect().top, tb = b ? b.el.getBoundingClientRect().top : ta;
-      const want = ta + frac * (tb - ta), err = want - (lineY() - 1);
-      if (Math.abs(err) < 1) break;
-      scrollBy(0, Math.round(err));
-    }
+    for (let k = 0; k < 2; k++) { const err = a.el.getBoundingClientRect().top - (lineY() - 2); if (Math.abs(err) < 1) break; scrollBy(0, Math.round(err)); }
   }
   onScroll();
 }
