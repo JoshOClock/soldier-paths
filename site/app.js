@@ -256,13 +256,14 @@ function renderStory() {
         html += `<div class="gap" style="margin-top:${pad}px"><span>${esc(later(gap))}</span></div>`; }
       html += `<article class="step" data-i="${i}">
         <div class="date">${esc(e.date)}</div>
-        <h3>${esc(e.detail)}</h3>
+        <h3>${/^Met /.test(e.detail) ? '<span class="met">✦ met someone he knew</span>' : ''}${esc(e.detail)}</h3>
         <p class="where">${esc(place(e.place_id).name)}${u.main ? ' · ' + esc(u.main) : ''}${u.disputed.length ? ' · ' + esc(u.disputed.join(' or ')) + ' (sources disagree)' : ''}</p>
         ${cross.map((c) => crossHtml(c)).join('')}
         ${primary.map(quoteBlock).join('')}${(doc.media || []).filter((m) => m.event_id === e.event_id).map(figure).join('')}${photosNear(st).map(archiveFigure).join('')}
         ${!e.quotes.length ? `<p class="note">${esc(e.note || 'No quoted source yet.')}</p>` : ''}
         ${secondary.length ? `<details class="more"><summary>More</summary>${secondary.map(quoteBlock).join('')}</details>` : ''}
         <p class="conf"><span class="${cc}">${esc(cl)}</span>${e.status === 'ai_draft' ? '<span class="c-ai">AI reading, not yet checked</span>' : ''}</p>
+        ${crossings(e, st.t, next ? next.t : st.t + 30 * DAY)}
       </article>${meanwhile(st.t, next ? next.t : Infinity)}`;
       STEPS.push({ t: st.t, p: st.p, e, k: 0 });
     });
@@ -279,6 +280,7 @@ function renderStory() {
   // Every stop is shown at the same scale, so zooming is predictable; long moves zoom out on the way (camera()).
   STEPS.forEach((s) => { s.k = STOP_K; });
   document.querySelectorAll('.crossgo').forEach((b) => b.addEventListener('click', () => select(b.dataset.other, curT)));
+  document.querySelectorAll('.xadd').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); if (!ROSTER.includes(b.dataset.id)) ROSTER.push(b.dataset.id); buildTabs(); select(SELF, curT); }));
   document.querySelectorAll('.meanwhile .mw').forEach((b) => b.addEventListener('click', () => select(b.dataset.other, +b.dataset.t)));
   bindGloss();
 }
@@ -291,6 +293,29 @@ function later(dt) {
   if (d < 63) return `${Math.round(d / 7)} weeks later`;
   if (d < 700) return `${Math.round(d / 30.4)} months later`;
   const y = Math.round(d / 365.25); return `${y} year${y > 1 ? 's' : ''} later`;
+}
+// Where his life crossed others on the site who aren't on the map yet:
+//   named together: the same specific record (clipping, list, page) names both men;
+//   nearby: their records put them within about 10 km at this time.
+// Each comes with a button to add that soldier. Capped, and men from the same unit come first.
+function crossings(e, from, to) {
+  if (isUnit(SELF)) return '';
+  const srcs = new Set([e.source_id, ...e.quotes.map((q) => q.source_id)]);
+  const named = [];
+  for (const sh of IDX.shared || []) {
+    if (!srcs.has(sh.source) || !sh.who.some((w) => w.id === SELF)) continue;
+    for (const w of sh.who) if (w.id !== SELF && !named.some((n) => n.id === w.id)) named.push({ id: w.id, title: sh.title });
+  }
+  const near = CLOSE.filter((c) => c.soldiers.includes(SELF) && ms(c.from) < to && ms(c.to) >= from && (c.tier !== 'possibly' || c.km < 10))
+    .map((c) => ({ id: c.soldiers.find((x) => x !== SELF), km: c.km, same: c.tier === 'same_unit' }))
+    .filter((x) => !ROSTER.includes(x.id) && !named.some((n) => n.id === x.id));
+  const seen = new Set(), nearU = [];
+  for (const x of near.sort((a, b) => (b.same - a.same) || a.km - b.km)) if (!seen.has(x.id)) { seen.add(x.id); nearU.push(x); }
+  const namedU = named.filter((n) => !ROSTER.includes(n.id));
+  if (!namedU.length && !nearU.length) return '';
+  const person = (id, extra) => { const o = soldier(id); return `<li>${o.face ? `<img src="${esc(o.face)}" alt="" width="22" height="22">` : ''}<span><b>${esc(o.name.replace(/,.*$/, ''))}</b>${o.unit ? ` · ${esc(o.unit)}` : ''}${extra}</span><button type="button" class="xadd" data-id="${id}">+ add</button></li>`; };
+  return `<div class="xings">${namedU.length ? `<div class="xh">Also named in this record</div><ul>${namedU.slice(0, 5).map((n) => person(n.id, ` <i>${esc(n.title)}</i>`)).join('')}</ul>` : ''}`
+    + `${nearU.length ? `<div class="xh">Others nearby</div><ul>${nearU.slice(0, 4).map((x) => person(x.id, ` <i>${x.same ? 'same unit' : x.km < 1 ? 'same place' : 'about ' + Math.round(x.km) + ' km away'}</i>`)).join('')}</ul>${nearU.length > 4 ? `<div class="xmore">and ${nearU.length - 4} more</div>` : ''}` : ''}</div>`;
 }
 // "Meanwhile": what the others on the map did between this stop and the next one.
 function meanwhile(from, to) {
