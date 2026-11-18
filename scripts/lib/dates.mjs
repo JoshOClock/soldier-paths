@@ -59,6 +59,8 @@ export function parseDate(text) {
   }
   else r = single(s);
   if (!r) return null;
+  // "About July 1": the stated date is the best guess (best); the range around it is the uncertainty.
+  const best = r.lo;
   if (approx) { r.lo -= 15; if (r.hi != null) r.hi += 15; }
-  return { ...r, text };
+  return { ...r, best, approx, text };
 }
