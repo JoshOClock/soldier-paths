@@ -683,12 +683,12 @@ function drawNow() {
     const at = positionAt(o.id, curT); if (!at) continue;
     const km = Math.round(d3.geoDistance(me, at.p) * 6371);
     others.push({ o, at, km });
-    const q = P(at.p), lab = isUnit(o.id) ? who(o.id) : `${first(o.name)}, ${ageAt(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
+    const q = P(at.p), lab = isUnit(o.id) ? who(o.id) : `${first(o.name)}, ${ageLabel(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
     if (q && vis(at.p) && q[0] > 0 && q[0] < W && q[1] > 0 && q[1] < H) greyPins.push({ q, id: o.id, text: lab });
     else edgePin(me, at.p, o.id, `${who(o.id)}: ${at.name}, ${km.toLocaleString()} km`);
   }
   const meQ = me && P(me);
-  if (meQ && vis(me)) facePin(meQ, SELF, false, isUnit(SELF) ? who(SELF) : `${first(soldier(SELF).name)}, ${ageAt(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
+  if (meQ && vis(me)) facePin(meQ, SELF, false, isUnit(SELF) ? who(SELF) : `${first(soldier(SELF).name)}, ${ageLabel(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
   for (const f of greyPins) facePin(f.q, f.id, true, f.text, meQ && Math.hypot(f.q[0] - meQ[0], f.q[1] - meQ[1]) < 40 ? -40 : 0);
   // Current place: name and its written date, then landmark names where there's room.
   if (active >= 0) {
@@ -726,9 +726,11 @@ function resize() {
 }
 
 // Ages and birthdays, from the birth date.
+// Age for labels: "newborn" in his first year, otherwise the number.
+function ageLabel(id, t) { const a = ageAt(id, t); return a === '' ? '' : a < 1 ? 'newborn' : String(a); }
 function ageAt(id, t) { const b = soldier(id).born; if (!b) return ''; const d = new Date(t), y = d.getUTCFullYear() - +b.slice(0, 4);
   return (d.getUTCMonth() + 1 < +b.slice(5, 7) || (d.getUTCMonth() + 1 === +b.slice(5, 7) && d.getUTCDate() < +b.slice(8, 10))) ? y - 1 : y; }
-function bdayNear(id, t) { const b = soldier(id).born; if (!b || t == null) return false; const y = new Date(t).getUTCFullYear(); return Math.abs(Date.UTC(y, +b.slice(5, 7) - 1, +b.slice(8, 10)) - t) < 4 * DAY; }
+function bdayNear(id, t) { const b = soldier(id).born; if (!b || t == null) return false; const y = new Date(t).getUTCFullYear(); if (y <= +b.slice(0, 4)) return false; return Math.abs(Date.UTC(y, +b.slice(5, 7) - 1, +b.slice(8, 10)) - t) < 4 * DAY; }
 
 // ---------------- moving between stops ----------------
 // The camera for a point in the story: centred on the soldier, at STOP_K, easing out and back in
@@ -803,10 +805,10 @@ function onScroll() {
   if (!anim && !userView) follow(camera(prog));
   const s = STEPS[idx];
   $('capDate').textContent = curT == null ? (STEPS[0] ? 'Before ' + STEPS[0].e.date : '') : HELD ? fmtDate(curT) : s.e.date;
-  $('capAge').textContent = curT != null && !isUnit(SELF) ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
+  $('capAge').textContent = curT != null && !isUnit(SELF) ? (ageAt(SELF, curT) < 1 ? ' · newborn' : ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}`) : '';
   $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : (SELF ? soldier(SELF).name : '');
   const nb = $('nowbar');
-  if (nb && s) nb.innerHTML = `${soldier(SELF).face ? `<img src="${esc(soldier(SELF).face)}" alt="" width="26" height="26">` : ''}<span><b>${esc(who(SELF))}</b>${isUnit(SELF) ? '' : `, ${ageAt(SELF, curT)}`} · <span class="nd">${esc(HELD ? fmtDate(curT) : s.e.date)}</span> · ${esc(IDX.places[s.e.place_id].name)}</span><span class="nn">${idx + 1} of ${STEPS.length}</span>`;
+  if (nb && s) nb.innerHTML = `${soldier(SELF).face ? `<img src="${esc(soldier(SELF).face)}" alt="" width="26" height="26">` : ''}<span><b>${esc(who(SELF))}</b>${isUnit(SELF) ? '' : `, ${ageLabel(SELF, curT)}`} · <span class="nd">${esc(HELD ? fmtDate(curT) : s.e.date)}</span> · ${esc(IDX.places[s.e.place_id].name)}</span><span class="nn">${idx + 1} of ${STEPS.length}</span>`;
   tlMark();
   if (!anim) draw();
 }
