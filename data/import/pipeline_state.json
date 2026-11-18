@@ -1,5 +1,5 @@
 {
-  "next_chapter": 15,
+  "next_chapter": 16,
   "runs": [
     {
       "date": "2026-11-18",
@@ -52,10 +52,32 @@
       "closeby_notes_added": 0,
       "photos_added": 0,
       "photos_note": "IWM and Wikimedia Commons item pages could not be fetched from the cloud run; ch5 photos not started"
+    },
+    {
+      "date": "2026-11-18",
+      "chapter": 15,
+      "units": [
+        "2-cdn-inf-div",
+        "2-cdn-armd-bde"
+      ],
+      "rows_added": 9,
+      "soldiers_checked": [],
+      "closeby_notes_added": 0,
+      "photos_added": 0,
+      "note": "2nd A-Tk Regt, 23 Bty and 17 Lt Fd Amb not named in ch. XV; no new soldiers to check; IWM item pages still not reachable from the cloud run"
     }
   ],
   "done": {
     "14": [
+      "2-cdn-inf-div",
+      "2-cdn-atk-regt",
+      "23-atk-bty",
+      "23-bty-k-trp",
+      "23-bty-j-trp",
+      "2-cdn-armd-bde",
+      "17-lt-fd-amb"
+    ],
+    "15": [
       "2-cdn-inf-div",
       "2-cdn-atk-regt",
       "23-atk-bty",
