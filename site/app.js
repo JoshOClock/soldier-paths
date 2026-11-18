@@ -873,7 +873,9 @@ canvas.addEventListener('pointerup', (e) => {
   }
   if (h.photo) {
     const ph = h.photo;
-    $('popt').textContent = ph.t; $('popd').textContent = `${ph.d}. ${ph.c}`;
+    $('popt').textContent = ph.t;
+    $('popd').innerHTML = `${SELF ? `<button type="button" class="popdate" id="popdate" title="Move the story to this date">${esc(ph.d)} →</button>` : esc(ph.d) + '.'} ${esc(ph.c)}`;
+    $('popdate')?.addEventListener('click', () => { hidePop(); seek(ms(ph.from)); });
     $('popimg').src = ph.img; $('popimg').alt = ph.t; $('popimg').hidden = false;
     $('popc').innerHTML = `<a href="${esc(ph.url)}" target="_blank" rel="noopener">${esc(ph.credit)}</a>${ph.lic ? ' · ' + esc(ph.lic) : ''}`; $('popc').hidden = false;
     pop.classList.add('photo');
