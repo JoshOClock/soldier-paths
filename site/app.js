@@ -298,12 +298,6 @@ function tlDraw() {
   tlEl.innerHTML = svg;
   tlG = { vert, pos, bx, bw, left };
   tlG.toT = (v) => vert ? Y0 + (v - top) / (bot - top) * (Y1 - Y0) : Y0 + (v - left) / (right - left) * (Y1 - Y0);
-  tlEl.querySelector('svg').addEventListener('click', (e) => {
-    const rr = tlEl.getBoundingClientRect(), v = vert ? e.clientY - rr.top : e.clientX - rr.left;
-    let best = 0, bd = 1e9;
-    STEPS.forEach((s, i) => { const p = s.t < Y0 ? (vert ? 42 : left) : pos(Math.min(s.t, Y1)); const d = Math.abs(p - v); if (d < bd) { bd = d; best = i; } });
-    seek(STEPS[best].t, true);
-  });
   tlMark();
 }
 function tlMark() {
@@ -318,31 +312,8 @@ function tlMark() {
   else { lab.setAttribute('x', Math.max(30, Math.min(tlEl.clientWidth - 30, p))); lab.textContent = `${dm} ${y}`; }
 }
 new ResizeObserver(() => tlDraw()).observe(tlEl);
-// Mouse wheel over the timeline moves through time; dragging along it scrubs to that date.
-// One wheel notch (or a trackpad swipe of the same size) moves exactly one month.
-let tlAcc = 0;
-const addMonths = (t, n) => { const d = new Date(t); const day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n);
-  d.setUTCDate(Math.min(day, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate())); return d.getTime(); };
-tlEl.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  if (!STEPS.length) return;
-  const dir = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-  tlAcc += e.deltaMode === 1 ? dir * 33 : dir;
-  const n = Math.trunc(tlAcc / 100); if (!n) return;
-  tlAcc -= n * 100;
-  const t = Math.max(STEPS[0].t, Math.min(STEPS[STEPS.length - 1].t, addMonths(curT ?? STEPS[0].t, n)));
-  seek(t);
-}, { passive: false });
-let tlDrag = false;
-tlEl.addEventListener('pointerdown', (e) => { tlDrag = true; tlEl.setPointerCapture(e.pointerId); });
-tlEl.addEventListener('pointermove', (e) => {
-  if (!tlDrag || !tlG) return;
-  const rr = tlEl.getBoundingClientRect(), v = tlG.vert ? e.clientY - rr.top : e.clientX - rr.left;
-  seek(Math.max(STEPS[0].t, Math.min(Y1, tlG.toT(v))));
-});
-tlEl.addEventListener('pointerup', () => { tlDrag = false; });
-tlEl.addEventListener('pointercancel', () => { tlDrag = false; });
-tlEl.style.touchAction = 'none';
+// The timeline only shows where the story is; reading the story moves it.
+
 
 // ---------------- map ----------------
 const canvas = $('map'), ctx = canvas.getContext('2d'), box = $('mapbox');
@@ -697,7 +668,6 @@ function bdayNear(id, t) { const b = soldier(id).born; if (!b || t == null) retu
 // The camera for a point in the story: centred on the soldier, at STOP_K, easing out and back in
 // over long journeys so both ends of the move fit on screen at the middle.
 const STOP_K = 260;
-const MOVE_FROM = 0.7;   // fraction of the scroll between two stops before the pin starts moving
 function camera(pr) {
   if (pr < 0 || !STEPS.length) return { c: [-30, 48], k: 9000 };
   const i = Math.floor(pr), f = pr - i, a = STEPS[Math.min(i, STEPS.length - 1)], b = STEPS[Math.min(i + 1, STEPS.length - 1)];
@@ -729,11 +699,13 @@ function go(i) {
   const from = { c: view.c.slice(), k: view.k, p: prog };
   // After a tab switch the route belongs to a different soldier: show it up to his stop at once, only the view moves.
   if (switching) { from.p = target.p; prog = target.p; switching = false; }
+  // Only ever animate one leg: moving back, or skipping several stories, puts him straight on the new stop's leg.
+  if (target.p < from.p || target.p - from.p > 1) { from.p = Math.max(-1, target.p - 1); if (target.p < 0 || target.p - 1 < 0 || target.p < prog) from.p = target.p; prog = from.p; }
   if (anim) anim.stop();
   if (reduce) { view = { c: target.c, k: target.k }; prog = target.p; draw(); return; }
   const ic = d3.geoInterpolate(from.c, target.c), dist = d3.geoDistance(from.c, target.c);
   const peak = Math.max(from.k, target.k, dist * 6371 * 0.6);
-  const dur = Math.min(2400, 700 + dist * 6371 * 0.35 + Math.abs(Math.log(target.k / from.k)) * 120);
+  const dur = Math.min(1600, 500 + dist * 6371 * 0.25 + Math.abs(Math.log(target.k / from.k)) * 100);
   const dp = target.p - from.p;
   anim = d3.timer((el) => {
     const t = Math.min(1, el / dur), e = d3.easeCubicInOut(t);
@@ -756,10 +728,8 @@ function onScroll() {
   if (idx < 0) curT = null;
   else {
     const a = STEPS[idx], b = STEPS[idx + 1], ta = a.el.getBoundingClientRect().top;
-    if (!b) curT = a.t; else { const tb = b.el.getBoundingClientRect().top; const f = Math.max(0, Math.min(1, (line - ta) / ((tb - ta) || 1))); curT = a.t + f * (b.t - a.t);
-      // Between two stops the soldier stays where the record last put him, then moves to the next stop
-      // over the last stretch before it: the records only say where he was, not when he set off.
-      if (idx === active && !anim && !userView) { const m = Math.max(0, (f - MOVE_FROM) / (1 - MOVE_FROM)); prog = idx + Math.min(d3.easeCubicInOut(m), 0.999); } }
+    if (!b) curT = a.t; else { const tb = b.el.getBoundingClientRect().top; const f = Math.max(0, Math.min(1, (line - ta) / ((tb - ta) || 1))); curT = a.t + f * (b.t - a.t); }
+    // He stays at the place of the last story reached; go() moves him when the next story starts.
   }
   if (window.__pinT != null && curT != null && Math.abs(curT - window.__pinT) < DAY) curT = window.__pinT; else window.__pinT = null;
   go(idx);
