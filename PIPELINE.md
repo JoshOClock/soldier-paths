@@ -20,7 +20,7 @@ branch for Josh to review. It never touches `main`.
    extracted: `{"done": {"7": ["2-cdn-inf-div", "2-cdn-atk-regt"]}, "runs": [...]}`.
 3. Work out the wanted units (above). Pick the **one** chapter from the queue below, earliest in the war first, whose
    dates overlap a wanted unit's posting dates and that hasn't been done for that unit yet. Postings for soldiers
-   added most recently come first if there's a choice. If there's nothing left to do, skip to the close-by notes.
+   added most recently come first if there's a choice. If there's nothing left to do, skip to the soldier records.
 4. Read that chapter with WebFetch (the pages are long: keep reading with `offset` until the end).
 5. For each wanted unit that overlaps the chapter, every time the text places it somewhere on a date, add a row to
    `data/unit_locations.csv`:
@@ -49,8 +49,48 @@ branch for Josh to review. It never touches `main`.
 9. Commit with a message listing the chapter, units and number of rows, and push the branch.
    Cloudflare Pages builds a preview of the branch at `https://auto-unit-paths.soldier-paths.pages.dev`.
 
-**One chapter per run. Stop after it**, then do the close-by notes and archive photos below. Don't start a second chapter even if
+**One chapter per run. Stop after it**, then do the soldier records, close-by notes and archive photos below. Don't start a second chapter even if
 there's time left.
+
+## Soldier records (every run, after the chapter)
+
+Look up up to **2** soldiers per run in public records about one man. Newest soldiers first: any public soldier in
+`data/soldiers.csv` not yet in `pipeline_state.json` `"soldiers_checked"`. Skip soldiers marked `private`.
+
+Where to look, in this order (WebSearch, then fetch the pages):
+1. **Died in service, 1939 to 1947** (a `death_date` in those years, or a record turns one up):
+   - Canadian Virtual War Memorial (veterans.gc.ca): unit, death date, cemetery, sometimes photos and clippings.
+   - Commonwealth War Graves Commission (cwgc.org): unit, service number, grave, next of kin.
+   - LAC "Second World War Service Files – War Dead" (recherche-collection-search.bac-lac.gc.ca): the file reference,
+     and the digitized file when it opens without a sign-in.
+   - Faces to Graves (facestograves.nl, Groesbeek), A Face for Every Name (Holten), Bergen op Zoom: life stories
+     for men buried in the Netherlands.
+2. **Everyone:**
+   - Royal Canadian Legion Military Service Recognition Books (provincial flip-books online: Ontario, Nova Scotia,
+     New Brunswick, Manitoba, BC/Yukon). Short biographies sent in by families.
+   - The Memory Project (thememoryproject.com): veteran interviews.
+   - Honours and awards: Canada Gazette and London Gazette lists, newspaper award notices.
+   - Local newspapers and obituaries (Peel's Prairie Provinces, Internet Archive, Google News Archive).
+
+Rules:
+1. **Same man, or nothing.** Only use a record when it matches on service number, or on full name plus at least two
+   of: birth date or year, hometown, unit, next of kin. If it's a maybe, put it in the summary for Josh as a
+   possible match with its link, and add nothing to the data.
+2. Add only. Never change or remove a row a family or another run wrote. If a record disagrees with an existing row,
+   add a row to `data/conflicts.csv` and say so in the summary.
+3. Each record used gets a row in `data/sources.csv`: `source_id` `src-<site>-<soldier_id>` (e.g.
+   `src-cvwm-harold-philp`), `kind` (`archival`, `newspaper`, `book`, `oral_history`, `article`), a title, the page
+   `url`, and `rights` if the page states reuse terms.
+4. New events in `data/events.csv` (`birth`, `enlistment`, `location`, `promotion`, `award`, `wound`, `death`,
+   `burial`, `discharge`, `marriage`): `confidence` `documented`, `status` `ai_draft`, `detail` in your own words
+   (under 15 words), dates as precise as the record. Places as in the chapter step.
+5. New postings in `data/postings.csv` only when the record names the unit; dates as the record gives them.
+6. Legion books, Faces to Graves and Memory Project pages are other people's writing: take the facts and link the
+   page. No quotes longer than a short phrase, and no copied photos. A photo goes in `data/photos.csv` only under the
+   archive-photo rules below.
+7. Record each soldier as `"soldiers_checked": {"<soldier_id>": "<date>"}`, even if nothing was found, and list
+   what was searched in the summary.
+8. Run `npm run build` again to check the rows.
 
 ## Chapter queue
 
@@ -135,5 +175,6 @@ Rules:
 
 ## Finishing
 
-Push the branch after all three steps. End with a short plain-language summary for Josh: chapter and units, locations added,
-close-by notes drafted, photos added (with places), and anything you weren't sure about.
+Push the branch after all four steps. End with a short plain-language summary for Josh: chapter and units, locations added,
+soldiers looked up (what was found, possible matches with links), close-by notes drafted, photos added (with places),
+and anything you weren't sure about.
