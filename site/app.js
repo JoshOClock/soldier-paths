@@ -257,7 +257,7 @@ function crossHtml(c) {
   const other = c.soldiers.find((x) => x !== SELF), on = who(other);
   const title = c.human_note ? c.human_note.title : (c.tier === 'likely' ? 'within about 10 km' : 'possibly within 10 km');
   const text = c.human_note ? c.human_note.text : c.note;
-  return `<aside class="cross" data-other="${other}"><div class="crossh">✦ Close by · ${esc(title)}</div><p>${esc(text)}</p>
+  return `<aside class="cross" data-other="${other}"><div class="crossh">✦ Close by · ${esc(title)}${c.human_note?.status === 'ai_draft' ? ' <span class="c-ai">AI draft, not yet checked</span>' : ''}</div><p>${esc(text)}</p>
     <button type="button" class="crossgo" data-other="${other}">See where ${esc(on)} was →</button></aside>`;
 }
 

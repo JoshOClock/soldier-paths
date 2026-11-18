@@ -59,6 +59,7 @@ const SRC = index(sources, 'source_id', 'sources');
 index(postings, 'posting_id', 'postings');
 index(unitLocs, 'location_id', 'unit_locations');
 const E = index(events, 'event_id', 'events');
+const UL = new Map(unitLocs.map((r) => [r.location_id, r]));
 const PO = new Map(postings.map((p) => [p.posting_id, p]));
 index(quotes, 'quote_id', 'quotes');
 
@@ -109,7 +110,8 @@ for (const r of events) {
 for (const q of quotes) { checkRef(q, 'event_id', E, 'event'); checkRef(q, 'source_id', SRC, 'source'); }
 for (const n of notes) {
   checkRef(n, 'soldier_a', S, 'soldier'); checkRef(n, 'soldier_b', S, 'soldier');
-  for (const id of [...n.events_a.split(';'), ...n.events_b.split(';')].filter(Boolean)) if (!E.has(id)) err(`${n._where}: unknown event "${id}"`);
+  for (const id of [...n.events_a.split(';'), ...n.events_b.split(';')].filter(Boolean)) if (!E.has(id) && !UL.has(id)) err(`${n._where}: unknown event or unit location "${id}"`);
+  if (n.status && !STATUS.includes(n.status)) err(`${n._where}: status must be one of ${STATUS.join(', ')}`);
 }
 for (const c of conflicts) for (const f of [c.fact_a, c.fact_b]) if (!E.has(f) && !PO.has(f)) err(`${c._where}: unknown fact "${f}"`);
 
@@ -268,7 +270,7 @@ function closeBy(a, b, ta, tb) {
 // A hand-written note belongs to an episode when one of its named events covers part of the episode.
 // Best match: the note naming both stops the episode is built on, then one naming either, then date overlap.
 function humanNote(a, b, e) {
-  const cover = (id) => { const ev = E.get(id); const lo = ev._start ?? ev._range.lo; const hi = ev._range.hi ?? lo + 365; return lo <= e.to && Math.max(hi, lo) >= e.from; };
+  const cover = (id) => { const ev = E.get(id) || UL.get(id); if (!ev || !ev._range) return false; const lo = ev._start ?? ev._range.lo; const hi = ev._range.hi ?? lo + 365; return lo <= e.to && Math.max(hi, lo) >= e.from; };
   const facts = [e.a.fact, e.b.fact];
   let best = null, bestScore = 0;
   for (const n of notes) {
@@ -278,7 +280,7 @@ function humanNote(a, b, e) {
     if (score > bestScore) { best = n; bestScore = score; }
   }
   if (best) best._used = true;
-  return best ? { title: best.title, text: best.text, events: [...best.events_a.split(';'), ...best.events_b.split(';')].filter(Boolean) } : null;
+  return best ? { title: best.title, text: best.text, status: best.status || '', events: [...best.events_a.split(';'), ...best.events_b.split(';')].filter(Boolean) } : null;
 }
 const MON = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
 const niceDate = (d) => { const [y, m, dd] = dayToIso(d).split('-').map(Number); return `${MON[m - 1]} ${dd}, ${y}`; };

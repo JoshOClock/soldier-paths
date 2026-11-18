@@ -76,6 +76,17 @@ stops.forEach((e, i) => {
   if (e.quote) push('quotes', { quote_id: `${eid}-q1`, event_id: eid, source_id: srcMap[e.source], page_ref: e.page || '', label: `From ${sub.sources.find((s) => s.id === e.source)?.title || 'the source'}`, text: e.quote });
 });
 
+// People he met: dated and placed ones become stops; the rest go in his note so nothing is lost.
+const metNotes = [];
+(sub.people_met || []).forEach((m, i) => {
+  const p = m.place || {}, d = m.date && parseDate(m.date);
+  const what = `Met ${m.name}${m.who_they_were ? ` (${m.who_they_were})` : ''}${m.what ? ': ' + m.what : ''}`;
+  if (d && typeof p.lat === 'number' && typeof p.lon === 'number' && !(p.lat === 0 && p.lon === 0)) {
+    push('events', { event_id: `${sid}-met-${i + 1}`, soldier_id: sid, kind: 'location', date: m.date, place_id: placeFor(p), unit_id: '', detail: what, source_id: srcMap[m.source], confidence: conf(m.confidence), status: status(m.confidence), note: 'Meeting someone he knew' });
+  } else metNotes.push(`${what}${m.date ? ' (' + m.date + ')' : ''}${p.name ? ', ' + p.name : ''}`);
+});
+if (metNotes.length) add.soldiers[0].note += `. People he met: ${metNotes.join('; ')}`;
+
 for (const [table, rows] of Object.entries(add)) {
   const { p, head } = T[table];
   const lines = rows.map((r) => head.map((h) => cell(r[h])).join(','));

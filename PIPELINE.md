@@ -33,9 +33,29 @@ official history, on a branch, for Josh to review. It never touches `main`.
 7. Update `data/import/pipeline_state.json` (`{"next_chapter": N, "runs": [{"date", "chapter", "rows_added"}]}`).
 8. Commit with a message listing the chapter and the number of rows added, and push the branch.
    Cloudflare Pages builds a preview of the branch at `https://auto-unit-paths.soldier-paths.pages.dev`.
-9. Finish with a short summary: chapter read, rows added per unit, anything uncertain.
+9. Finish with a short summary: chapter read, rows added per unit, close-by notes drafted, anything uncertain.
 
-Stop after one chapter. If the chapter queue is finished, say so and do nothing else.
+Stop after one chapter. If the chapter queue is finished, skip steps 3 to 5 and go straight to the close-by notes below.
+
+## Close-by notes (every run, after the chapter)
+
+The build finds every stretch where two public soldiers were within about 10 km (`site/data/closeby.json`).
+Episodes with `"human_note": null` only have a dry template note. Draft a better one for up to 5 of them per run,
+oldest war date first:
+
+1. Read both men's stories around the episode's dates: their events and quotes in `site/data/soldier/<id>.json`
+   (unit stops have ids starting `u:`; their location id is the part after `u:`).
+2. Write 2 to 4 plain sentences in the style of the existing notes in `data/closeby_notes.csv`: what each man
+   (or his unit) was doing, and what links them (same battle, same brigade, same town). Use only facts already in
+   the site's data, and name the place and date.
+3. Never say or suggest they met, saw each other or knew each other unless a record in the data says so. End with
+   what isn't known, for example "Whether they crossed paths isn't recorded."
+4. Add a row to `data/closeby_notes.csv`: `note_id` `cb-auto-<n>`, the two soldier ids, `events_a` / `events_b`
+   set to the episode's `facts` (event ids, or unit location ids without the `u:`), a short `title`
+   ("about 6 km apart", "the same battle"), the `text`, `source_id` empty, and `status` `ai_draft`.
+5. Run `npm run build` again and check the note attached to the episode (the build warns if a note matches nothing).
+
+Never edit or replace a note someone else wrote.
 
 ## Chapter queue
 
