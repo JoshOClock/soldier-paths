@@ -229,7 +229,7 @@ const uname = (id) => U.get(id)?.short_name || U.get(id)?.name || id;
 function unitStopRow(loc, viaUnit, forUnitPath) {
   const pl = P.get(loc.place_id);
   return {
-    event_id: 'u:' + loc.location_id, soldier_id: '', kind: 'unit', date: loc.date_from + (loc.date_to ? ' to ' + loc.date_to : ''),
+    event_id: 'u:' + loc.location_id, soldier_id: '', kind: 'unit', date: loc.date_from + (loc.date_to && loc.date_to !== loc.date_from ? ' to ' + loc.date_to : ''),
     place_id: loc.place_id, unit_id: loc.unit_id,
     detail: unitSummary(loc) || (forUnitPath ? `At ${pl.name}` : `With his unit at ${pl.name}`),
     source_id: loc.source_id, confidence: forUnitPath ? loc.confidence : 'inherited', status: loc.status,
