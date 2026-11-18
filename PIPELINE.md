@@ -117,6 +117,17 @@ Base URL: `https://ibiblio.org/hyperwar/UN/Canada/CA/Victory/`
 | 21 | Victory-21.html | 1 to 22 Apr 1945 (Western Netherlands) |
 | 22 | Victory-22.html | 1 to 8 May 1945 |
 
+**Medical units: do this first, as the run's one chapter.** The official medical history names the field ambulances
+directly, which Stacey rarely does. Next run, before any Stacey chapter, extract `17-lt-fd-amb` from:
+W.R. Feasby, *Official History of the Canadian Medical Services 1939-1945, Vol. 1: Organization and Campaigns* (1956),
+`https://www.ibiblio.org/hyperwar/UN/Canada/Medical/CMS_vol1_e.pdf` (source id `src-feasby-cms1`, kind `book`).
+The North-West Europe chapters mention No. 17 Light Field Ambulance around pp. 230 (Normandy landing, Seulles,
+Bény-sur-Mer), 230 to 249 (Bretteville, Rots, Falaise), 249 (Calais, Hardinghen), 263 (Walcheren, Bruges, Grave)
+and 283 (Rhine). Rows are `documented` for this unit. Note in the summary that the history says the unit landed on
+13 June 1944, while Gordon's own record says about 19 June: add a `data/conflicts.csv` row, don't change his events.
+Record it in `pipeline_state.json` as `"done": {"feasby": ["17-lt-fd-amb"]}`. Use the same book for any other
+RCAMC unit a soldier is posted to later.
+
 Earlier runs (chapters 5 to 8) extracted the whole 2nd Armoured Brigade and parts of the 2nd Division. Count those
 chapters as done for the units they cover; check `data/unit_locations.csv` rather than re-reading.
 
