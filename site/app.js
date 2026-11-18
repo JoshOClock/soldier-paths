@@ -380,18 +380,28 @@ function restyleTiles() {
 let sheetsOn = true, sheetKey = '';
 try { sheetsOn = localStorage.getItem('sp-sheets') !== 'off'; } catch (e) { /* storage blocked */ }
 // The scans carry some transparency, so each sheet sits on a plain paper-coloured backing.
-const SHEET_PAPER = '#e9e2cc';
-const sheetBox = (m) => ({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[m.b[0], m.b[1]], [m.b[2], m.b[1]], [m.b[2], m.b[3]], [m.b[0], m.b[3]], [m.b[0], m.b[1]]]] } });
+// Where a sheet isn't drawn (zoomed out, or switched off) a dashed outline and its name show it's there.
+const SHEET_PAPER = '#e9e2cc', SHEET_Z = 10;
+const sheetBox = (m) => ({ type: 'Feature', properties: { id: m.id, label: `1944 map · ${m.name}` }, geometry: { type: 'Polygon', coordinates: [[[m.b[0], m.b[1]], [m.b[2], m.b[1]], [m.b[2], m.b[3]], [m.b[0], m.b[3]], [m.b[0], m.b[1]]]] } });
 function addSheets() {
-  if (!ML.getSource('sheet-paper')) {
-    ML.addSource('sheet-paper', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    ML.addLayer({ id: 'sheet-paper', type: 'fill', source: 'sheet-paper', minzoom: 10, paint: { 'fill-color': SHEET_PAPER, 'fill-opacity': 1 } });
+  if (!ML.getSource('sheet-boxes')) {
+    ML.addSource('sheet-boxes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    ML.addLayer({ id: 'sheet-paper', type: 'fill', source: 'sheet-boxes', minzoom: SHEET_Z, paint: { 'fill-color': SHEET_PAPER, 'fill-opacity': 1 } });
   }
   for (const m of IDX.sheets || []) {
     const id = 'sheet-' + m.id;
     if (ML.getSource(id)) continue;
     ML.addSource(id, { type: 'raster', scheme: 'tms', tiles: [`wt/WWIIMM${m.id}_TIFF/{z}/{x}/{y}.png`], tileSize: 256, minzoom: 8, maxzoom: 16, bounds: m.b });
-    ML.addLayer({ id, type: 'raster', source: id, minzoom: 10, layout: { visibility: 'none' }, paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } });
+    ML.addLayer({ id, type: 'raster', source: id, minzoom: SHEET_Z, layout: { visibility: 'none' }, paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } });
+  }
+  if (!ML.getLayer('sheet-outline')) {
+    ML.addLayer({ id: 'sheet-hit', type: 'fill', source: 'sheet-boxes', paint: { 'fill-color': '#000', 'fill-opacity': 0.01 } });
+    ML.addLayer({ id: 'sheet-outline', type: 'line', source: 'sheet-boxes', paint: { 'line-color': C['--ink'], 'line-opacity': 0.55, 'line-width': 1.2, 'line-dasharray': [3, 2] } });
+    ML.addLayer({ id: 'sheet-label', type: 'symbol', source: 'sheet-boxes', minzoom: 7.5, layout: { 'text-field': ['get', 'label'], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-max-width': 9, 'text-allow-overlap': false }, paint: { 'text-color': C['--ink'], 'text-halo-color': C['--land'], 'text-halo-width': 1.4, 'text-opacity': 0.8 } });
+  } else {
+    ML.setPaintProperty('sheet-outline', 'line-color', C['--ink']);
+    ML.setPaintProperty('sheet-label', 'text-color', C['--ink']);
+    ML.setPaintProperty('sheet-label', 'text-halo-color', C['--land']);
   }
   sheetKey = ''; syncSheets();
 }
@@ -408,12 +418,32 @@ function sheetsInForce(t) {
   return on;
 }
 function syncSheets() {
-  if (!tilesReady() || !IDX.sheets) return;
-  const on = sheetsOn ? sheetsInForce(curT) : new Set(), key = [...on].join();
+  if (!tilesReady() || !IDX.sheets || !ML.getLayer('sheet-outline')) return;
+  const on = sheetsInForce(curT), key = sheetsOn + ':' + [...on].join();
   if (key === sheetKey) return;
   sheetKey = key;
-  for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setLayoutProperty(id, 'visibility', on.has(m.id) ? 'visible' : 'none'); }
-  ML.getSource('sheet-paper')?.setData({ type: 'FeatureCollection', features: IDX.sheets.filter((m) => on.has(m.id)).map(sheetBox) });
+  for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setLayoutProperty(id, 'visibility', sheetsOn && on.has(m.id) ? 'visible' : 'none'); }
+  ML.getSource('sheet-boxes').setData({ type: 'FeatureCollection', features: IDX.sheets.filter((m) => on.has(m.id)).map(sheetBox) });
+  ML.setLayoutProperty('sheet-paper', 'visibility', sheetsOn ? 'visible' : 'none');
+  // Outline and name: only while the sheet itself isn't showing.
+  for (const id of ['sheet-outline', 'sheet-label', 'sheet-hit']) ML.setLayerZoomRange(id, id === 'sheet-label' ? 7.5 : 0, sheetsOn ? SHEET_Z : 24);
+}
+// Tap an outlined sheet to turn the old maps on and fly in to it.
+function sheetAt(px, py) {
+  if (!useTiles() || !ML.getLayer('sheet-hit')) return null;
+  const f = ML.queryRenderedFeatures([px, py], { layers: ['sheet-hit'] })[0];
+  return f ? (IDX.sheets || []).find((m) => m.id === f.properties.id) : null;
+}
+function flyTo(c, k) {
+  if (anim) anim.stop();
+  const from = { c: view.c.slice(), k: view.k }, ic = d3.geoInterpolate(from.c, c), dur = reduce ? 0 : 900;
+  userView = true; $('mreset').hidden = false;
+  anim = d3.timer((el) => {
+    const t = dur ? Math.min(1, el / dur) : 1, e = d3.easeCubicInOut(t);
+    view.c = ic(e); view.k = Math.exp(Math.log(from.k) + (Math.log(k) - Math.log(from.k)) * e);
+    if (t >= 1) { anim.stop(); anim = null; settleSoon(); }
+    draw();
+  });
 }
 // The sheet under the centre of the view, for the credit line.
 function sheetHere() {
@@ -434,7 +464,7 @@ function syncTiles() {
   syncSheets();
   const sh = sheetHere(), sa = $('sheetattr');
   if (sa) { sa.hidden = !sh; if (sh) sa.textContent = `1944 map: ${sh.name}, ${sh.scale.replace(/(\d)(?=(\d{3})+$)/g, '$1,')}, ${sh.kind.charAt(0).toLowerCase() + sh.kind.slice(1)}, ${fmtDate(Date.parse(sh.pub))}. Laurier Military History Archive / U. Waterloo / Scholars GeoPortal`; }
-  const tg = $('sheettoggle'); if (tg) tg.hidden = tileZoom() < 9.5;
+  
 }
 // Overlay projection: the tiled map's own once it's mostly showing, otherwise the globe.
 const useTiles = () => tilesReady() && tileAlpha >= 0.5;
@@ -720,7 +750,17 @@ canvas.addEventListener('pointermove', (e) => {
 canvas.addEventListener('pointerup', (e) => {
   touches.delete(e.pointerId); if (pinch) { if (touches.size < 2) pinch = null; return; }
   const d = drag; drag = null; if (d && d.moved) { settleSoon(); return; }
-  const h = hitAt(e); if (!h) { hidePop(); return; }
+  const h = hitAt(e);
+  if (!h) {
+    hidePop();
+    const r = canvas.getBoundingClientRect(), sh = sheetAt(e.clientX - r.left, e.clientY - r.top);
+    if (sh && (!sheetsOn || tileZoom() < SHEET_Z)) {
+      if (!sheetsOn) setSheets(true);
+      const km = (sh.b[2] - sh.b[0]) * 111.32 * Math.cos((sh.b[1] + sh.b[3]) / 2 * Math.PI / 180);
+      flyTo([(sh.b[0] + sh.b[2]) / 2, (sh.b[1] + sh.b[3]) / 2], Math.max(MIN_K, Math.min(km * 1.2, 40)));
+    }
+    return;
+  }
   $('popt').textContent = h.l.name; $('popd').textContent = h.l.d || '';
   pop.hidden = false; const pw = pop.offsetWidth, ph = pop.offsetHeight; let x = h.x + 14, y = h.y - ph / 2;
   if (x + pw > W - 8) x = h.x - 14 - pw; pop.style.left = Math.max(8, x) + 'px'; pop.style.top = Math.max(8, Math.min(H - ph - 8, y)) + 'px';
@@ -745,7 +785,12 @@ canvas.addEventListener('wheel', (e) => {
 }, { passive: false });
 canvas.addEventListener('dblclick', (e) => { const r = canvas.getBoundingClientRect(); zoomBy(0.5, e.clientX - r.left, e.clientY - r.top); });
 { const tg = $('sheettoggle'); tg.setAttribute('aria-pressed', String(sheetsOn));
-  tg.addEventListener('click', () => { sheetsOn = !sheetsOn; tg.setAttribute('aria-pressed', String(sheetsOn)); try { localStorage.setItem('sp-sheets', sheetsOn ? 'on' : 'off'); } catch (e) { /* storage blocked */ } sheetKey = ''; draw(); }); }
+  tg.addEventListener('click', () => setSheets(!sheetsOn)); }
+function setSheets(v) {
+  sheetsOn = v; $('sheettoggle').setAttribute('aria-pressed', String(v)); $('sheettoggle').title = v ? 'Hide the 1944–45 army maps' : 'Show the 1944–45 army maps';
+  try { localStorage.setItem('sp-sheets', v ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
+  sheetKey = ''; draw();
+}
 $('zin').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(0.6); });
 $('zout').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(1 / 0.6); });
 $('mreset').addEventListener('click', () => { const i = active; active = -3; go(i); });
