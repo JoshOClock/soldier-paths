@@ -178,6 +178,11 @@ function quoteBlock(q) {
   return `<blockquote class="${cls}"><div class="jl">${esc(q.label || src.title)}</div>${body}</blockquote>`;
 }
 const SECONDARY = new Set(['book', 'article']);
+function figure(m) {
+  const src = IDX.sources[m.source_id];
+  const credit = [m.credit, m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">source</a>` : ''].filter(Boolean).join(' · ');
+  return `<figure class="${m.kind === 'portrait' ? 'portrait' : 'clip'}"><img src="${esc(m.src)}" alt="${esc(m.caption)}" loading="lazy"><figcaption>${esc(m.caption)}${credit ? ` <span class="srcl">${credit}</span>` : ''}</figcaption></figure>`;
+}
 const CONF = { documented: ['c-doc', 'documented'], family: ['c-fam', 'family record'], inherited: ['c-inf', 'from his unit'], inferred: ['c-inf', 'estimated'] };
 
 function closeFor(id, from, to) {
@@ -195,6 +200,7 @@ function renderStory() {
     <p class="unit">${esc(s.unit)}</p>
     ${isUnit(SELF) ? `<p class="lede">Where this unit was, stop by stop, from the official history and war diaries. Each stop quotes its source. These are drafts read by AI and not yet checked by a person.</p>`
     : `<p class="lede">${esc(doc.soldier.rank)}. Born ${esc(born)}${bp ? ', ' + esc(bp) : ''}. Every stop below quotes its source. The map puts him only where a record does: his own papers, or his unit's when his own go quiet. A "close by" note never means the men met unless a record says so.</p>`}
+    ${(doc.media || []).filter((m) => m.kind === 'portrait').map(figure).join('')}
     <p class="hint">Scroll to follow him. The timeline beside the map is to scale.</p>
   </header>`;
   STEPS = [];
@@ -230,7 +236,7 @@ function renderStory() {
         <h3>${esc(e.detail)}</h3>
         <p class="where">${esc(place(e.place_id).name)}${u.main ? ' · ' + esc(u.main) : ''}${u.disputed.length ? ' · ' + esc(u.disputed.join(' or ')) + ' (sources disagree)' : ''}</p>
         ${cross.map((c) => crossHtml(c)).join('')}
-        ${primary.map(quoteBlock).join('')}
+        ${primary.map(quoteBlock).join('')}${(doc.media || []).filter((m) => m.event_id === e.event_id).map(figure).join('')}
         ${!e.quotes.length ? `<p class="note">${esc(e.note || 'No quoted source yet.')}</p>` : ''}
         ${secondary.length ? `<details class="more"><summary>More</summary>${secondary.map(quoteBlock).join('')}</details>` : ''}
         <p class="conf"><span class="${cc}">${esc(cl)}</span>${e.status === 'ai_draft' ? '<span class="c-ai">AI reading, not yet checked</span>' : ''}</p>

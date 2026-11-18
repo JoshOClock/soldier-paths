@@ -247,3 +247,7 @@ a{color:var(--route)}
 .tabs .tab.unit [role=tab]{font-style:normal;letter-spacing:.03em}
 .welcome .wh{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;margin:22px 0 4px}
 .welcome .pick.units button{grid-template-columns:1fr}
+.hero figure.portrait,.step figure{margin:18px 0}
+figure.portrait img{width:min(100%,340px);height:auto;display:block;filter:grayscale(.15);border:1px solid var(--border)}
+figure.clip img{width:min(100%,560px);height:auto;display:block;border:1px solid var(--border)}
+.story figcaption{font-family:var(--f-type);font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
