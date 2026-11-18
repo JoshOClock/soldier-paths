@@ -699,21 +699,19 @@ function go(i) {
   const from = { c: view.c.slice(), k: view.k, p: prog };
   // After a tab switch the route belongs to a different soldier: show it up to his stop at once, only the view moves.
   if (switching) { from.p = target.p; prog = target.p; switching = false; }
-  // Only ever animate one leg: moving back, or skipping several stories, puts him straight on the new stop's leg.
-  if (target.p < from.p || target.p - from.p > 1) { from.p = Math.max(-1, target.p - 1); if (target.p < 0 || target.p - 1 < 0 || target.p < prog) from.p = target.p; prog = from.p; }
+  // The head goes straight to the new story's place; only the map glides there.
+  prog = target.p; from.p = target.p;
   if (anim) anim.stop();
   if (reduce) { view = { c: target.c, k: target.k }; prog = target.p; draw(); return; }
   const ic = d3.geoInterpolate(from.c, target.c), dist = d3.geoDistance(from.c, target.c);
   const peak = Math.max(from.k, target.k, dist * 6371 * 0.6);
   const dur = Math.min(1600, 500 + dist * 6371 * 0.25 + Math.abs(Math.log(target.k / from.k)) * 100);
-  const dp = target.p - from.p;
   anim = d3.timer((el) => {
     const t = Math.min(1, el / dur), e = d3.easeCubicInOut(t);
     view.c = ic(e);
     const lk = Math.log(from.k) + (Math.log(target.k) - Math.log(from.k)) * e;
     const bump = Math.sin(Math.PI * e) * Math.max(0, Math.log(peak) - Math.max(Math.log(from.k), Math.log(target.k)));
     view.k = Math.exp(lk + bump);
-    prog = dp >= 0 ? from.p + dp * e : target.p;
     if (t >= 1) { anim.stop(); anim = null; prog = target.p; onScroll(); }
     draw();
   });
