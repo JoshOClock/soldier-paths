@@ -697,6 +697,7 @@ function bdayNear(id, t) { const b = soldier(id).born; if (!b || t == null) retu
 // The camera for a point in the story: centred on the soldier, at STOP_K, easing out and back in
 // over long journeys so both ends of the move fit on screen at the middle.
 const STOP_K = 260;
+const MOVE_FROM = 0.7;   // fraction of the scroll between two stops before the pin starts moving
 function camera(pr) {
   if (pr < 0 || !STEPS.length) return { c: [-30, 48], k: 9000 };
   const i = Math.floor(pr), f = pr - i, a = STEPS[Math.min(i, STEPS.length - 1)], b = STEPS[Math.min(i + 1, STEPS.length - 1)];
@@ -756,8 +757,9 @@ function onScroll() {
   else {
     const a = STEPS[idx], b = STEPS[idx + 1], ta = a.el.getBoundingClientRect().top;
     if (!b) curT = a.t; else { const tb = b.el.getBoundingClientRect().top; const f = Math.max(0, Math.min(1, (line - ta) / ((tb - ta) || 1))); curT = a.t + f * (b.t - a.t);
-      // Between two stops the pin travels along the route as the reader scrolls.
-      if (idx === active && !anim && !userView) prog = idx + Math.min(f, 0.999); }
+      // Between two stops the soldier stays where the record last put him, then moves to the next stop
+      // over the last stretch before it: the records only say where he was, not when he set off.
+      if (idx === active && !anim && !userView) { const m = Math.max(0, (f - MOVE_FROM) / (1 - MOVE_FROM)); prog = idx + Math.min(d3.easeCubicInOut(m), 0.999); } }
   }
   if (window.__pinT != null && curT != null && Math.abs(curT - window.__pinT) < DAY) curT = window.__pinT; else window.__pinT = null;
   go(idx);
