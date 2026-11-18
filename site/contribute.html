@@ -15,7 +15,13 @@
 <main class="cpage">
   <p class="kicker">Soldier Paths · add a soldier</p>
   <h1>Add someone from your family</h1>
-  <p class="lede">If someone in your family served in the Second World War, you can add him to the map. You don't need to know anything about maps or data. Your own AI assistant (ChatGPT, Claude, Gemini or similar) reads your documents and writes them up in the form this site needs. You check the result here, then send it in.</p>
+  <p class="lede">If someone in your family served in the Second World War, you can add him to the map. You don't need to know anything about maps or data. Your own AI assistant (ChatGPT, Claude, Gemini or similar) reads your documents and writes them up in the form this site needs. You check the result here, then upload it with your photos.</p>
+  <ol class="howto overview">
+    <li><b>Gather</b> his papers, photos and what the family remembers.</li>
+    <li><b>Ask your AI</b>: paste our prompt into it with your documents and photos.</li>
+    <li><b>Check</b> its answer on this page.</li>
+    <li><b>Upload</b> the file and your photos to our private upload folder (Dropbox, no account needed). Your AI can't do this part for you; it's one button here.</li>
+  </ol>
 
   <section class="cstep">
     <h2><span>1</span> Gather what you have</h2>
@@ -46,8 +52,9 @@
     <div id="result" aria-live="polite"></div>
   </section>
 
-  <section class="cstep" id="sendStep" hidden>
-    <h2><span>4</span> Send it in</h2>
+  <section class="cstep" id="sendStep">
+    <h2><span>4</span> Upload it with your photos</h2>
+    <p class="small" id="sendWait">This unlocks once step 3 says your file looks good.</p>
     <p>Submissions are read by a person before anything goes on the site. Each fact keeps a note of where it came from, and anything from family memory is marked as such.</p>
     <label class="consent"><input type="checkbox" id="ok1"> The soldier has died, and nothing here is about a living person except my name and relationship.</label>
     <label class="consent"><input type="checkbox" id="ok2"> I'm happy for this to be shown publicly on Soldier Paths with the sources listed.</label>

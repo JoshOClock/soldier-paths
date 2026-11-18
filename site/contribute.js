@@ -28,7 +28,7 @@ function check() {
   const out = $('result');
   let s;
   try { s = extractJson($('paste').value); } catch (e) {
-    current = null; gate(); $('sendStep').hidden = true;
+    current = null; gate(); $('sendWait').hidden = false;
     out.innerHTML = `<p class="verdict bad">That doesn't look like the AI's JSON answer. Make sure you pasted its whole reply, including the part that starts with { and ends with }.</p>`;
     return;
   }
@@ -40,7 +40,7 @@ function check() {
     : `<p class="verdict">Looks good. ${stops.length} stop${stops.length === 1 ? '' : 's'}${warnings.length ? `, and ${warnings.length} thing${warnings.length > 1 ? 's' : ''} worth a look` : ''}.</p>`;
   out.innerHTML = verdict + list(errors, 'err') + list(warnings, '') + preview(s, stops);
   drawMap(stops);
-  $('sendStep').hidden = !current;
+  $('sendWait').hidden = !!current;
   gate();
 }
 
