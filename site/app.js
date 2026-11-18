@@ -12,7 +12,9 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const first = (name) => name.split(' ')[0];
 const fmtDate = (t) => new Date(t).toLocaleDateString('en-CA', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '');
 
-let GEO, IDX, CLOSE, LAND, BORDERS, DOCS = {}, SELF, STEPS = [], curT = null, active = -1, showOthers = true;
+let GEO, IDX, CLOSE, LAND, BORDERS, DOCS = {}, SELF = null, STEPS = [], curT = null, active = -1;
+// The soldiers the reader has added. The map shows only these; the story follows SELF, one of them.
+let ROSTER = [];
 const FACES = {};
 
 // ---------------- data ----------------
@@ -27,9 +29,13 @@ async function boot() {
     DOCS[s.id] = await fetch(`data/soldier/${s.id}.json`).then((r) => r.json());
     if (s.face) { const im = new Image(); im.onload = () => draw(); im.src = s.face; FACES[s.id] = im; }
   }));
+  // The address remembers who's added and who's being read: #show=a,b&on=a (an old #a still works).
+  const h = new URLSearchParams(location.hash.slice(1)), known = (id) => IDX.soldiers.some((s) => s.id === id);
+  const old = location.hash.slice(1);
+  ROSTER = (h.get('show') || (known(old) ? old : '')).split(',').filter(known);
+  const on = h.get('on') || ROSTER[0];
   buildTabs();
-  const want = location.hash.slice(1);
-  select(IDX.soldiers.some((s) => s.id === want) ? want : IDX.soldiers[0].id, null);
+  if (ROSTER.includes(on)) select(on, null); else welcome();
 }
 
 const place = (id) => IDX.places[id];
@@ -48,20 +54,59 @@ function positionAt(id, t) {
   return { stop: st[i], p: st[i].p, name: place(st[i].e.place_id).name, i };
 }
 
-// ---------------- tabs ----------------
+// ---------------- tabs: the soldiers added, plus "+ Add" ----------------
+function saveHash() {
+  const q = ROSTER.length ? `show=${ROSTER.join(',')}${SELF ? '&on=' + SELF : ''}` : '';
+  history.replaceState(null, '', q ? '#' + q : location.pathname);
+}
 function buildTabs() {
   const nav = $('tabs');
-  nav.innerHTML = IDX.soldiers.map((s) => `<button role="tab" data-id="${s.id}" aria-selected="false">${esc(s.name.replace(/,.*$/, ''))}</button>`).join('') +
-    `<a class="eye addlink" href="contribute.html">+ add a soldier</a><button type="button" class="eye" id="eye" aria-pressed="true" title="Show or hide the other soldiers on the map">others on map</button>`;
+  const rest = IDX.soldiers.filter((s) => !ROSTER.includes(s.id));
+  nav.innerHTML = ROSTER.map((id) => { const s = soldier(id);
+    return `<span class="tab"><button role="tab" data-id="${id}" aria-selected="${id === SELF}">${esc(s.name.replace(/,.*$/, ''))}</button><button type="button" class="tabx" data-id="${id}" aria-label="Remove ${esc(s.name)}" title="Remove from the map">×</button></span>`; }).join('')
+    + `<div class="addwrap"><button type="button" class="addbtn" id="addbtn" aria-expanded="false"${rest.length ? '' : ' disabled'}>+ Add soldier</button>`
+    + `<div class="addmenu" id="addmenu" hidden>${IDX.soldiers.length > 8 ? '<input type="search" id="addq" placeholder="Search by name" aria-label="Search soldiers">' : ''}<ul>`
+    + rest.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(s.name.toLowerCase())}">${esc(s.name)}<span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')
+    + `</ul><a href="contribute.html">Not here? Add someone from your family →</a></div></div>`;
   nav.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => select(b.dataset.id, curT)));
-  $('eye').addEventListener('click', (e) => { showOthers = !showOthers; e.target.setAttribute('aria-pressed', showOthers); draw(); });
+  nav.querySelectorAll('.tabx').forEach((b) => b.addEventListener('click', () => removeSoldier(b.dataset.id)));
+  const ab = $('addbtn'), menu = $('addmenu');
+  ab.addEventListener('click', () => { menu.hidden = !menu.hidden; ab.setAttribute('aria-expanded', !menu.hidden); if (!menu.hidden) $('addq')?.focus(); });
+  menu.querySelectorAll('li button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
+  $('addq')?.addEventListener('input', (e) => { const q = e.target.value.toLowerCase(); menu.querySelectorAll('li').forEach((li) => { li.hidden = !li.firstChild.dataset.name.includes(q); }); });
   const h = () => document.documentElement.style.setProperty('--tabh', nav.offsetHeight + 'px');
   h(); addEventListener('resize', h);
 }
+document.addEventListener('click', (e) => { const m = $('addmenu'); if (m && !m.hidden && !e.target.closest('.addwrap')) { m.hidden = true; $('addbtn').setAttribute('aria-expanded', 'false'); } });
+function addSoldier(id) {
+  if (!ROSTER.includes(id)) ROSTER.push(id);
+  buildTabs();
+  select(id, curT);
+}
+function removeSoldier(id) {
+  ROSTER = ROSTER.filter((x) => x !== id);
+  if (id === SELF) { buildTabs(); if (ROSTER.length) select(ROSTER[0], curT); else welcome(); }
+  else { buildTabs(); saveHash(); onScroll(); draw(); }
+}
+// Nobody added yet: a short welcome with the soldiers to choose from.
+function welcome() {
+  SELF = null; STEPS = []; curT = null; active = -1; prog = -1; saveHash();
+  $('story').innerHTML = `<section class="welcome"><div class="eyebrow">Soldier Paths · Second World War</div><h1>Follow a soldier</h1>
+    <p>Pick someone to follow across the map, then add others to see where they were on the same day.</p>
+    <ul class="pick">${IDX.soldiers.map((s) => `<li><button type="button" data-id="${s.id}">${s.face ? `<img src="${esc(s.face)}" alt="" width="48" height="48">` : ''}<b>${esc(s.name)}</b><span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>
+    <p class="small"><a href="contribute.html">Add someone from your family →</a></p></section>`;
+  document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
+  tlEl.innerHTML = ''; tlG = null;
+  $('capDate').textContent = ''; $('capAge').textContent = ''; $('capPlace').textContent = ''; $('capOther').textContent = '';
+  if (anim) anim.stop(); anim = null;
+  flyTo([-30, 48], 9000); userView = false; $('mreset').hidden = true;
+  draw();
+}
 
 function select(id, keepT) {
+  if (!ROSTER.includes(id)) { ROSTER.push(id); buildTabs(); }
   SELF = id;
-  history.replaceState(null, '', '#' + id);
+  saveHash();
   document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.id === id));
   renderStory();
   // Keep the globe where it is; go() then glides from the current view to the new soldier's stop.
@@ -194,12 +239,8 @@ function renderStory() {
   html += `<p>Built from the project's data files on ${esc(IDX.built)}. Spotted something wrong? Every stop shows the source it comes from.</p></section>`;
   $('story').innerHTML = html;
   STEPS.forEach((s, i) => { s.el = document.querySelector(`.step[data-i="${i}"]`); });
-  // Zoom for each stop: wide for long moves, close for short ones.
-  STEPS.forEach((s, i) => {
-    const prev = STEPS[i - 1];
-    const km = prev ? d3.geoDistance(prev.p, s.p) * 6371 : 600;
-    s.k = Math.max(70, Math.min(5200, km * 1.5 + 40));
-  });
+  // Every stop is shown at the same scale, so zooming is predictable; long moves zoom out on the way (camera()).
+  STEPS.forEach((s) => { s.k = STOP_K; });
   document.querySelectorAll('.crossgo').forEach((b) => b.addEventListener('click', () => select(b.dataset.other, curT)));
   bindGloss();
 }
@@ -278,10 +319,18 @@ function tlMark() {
 }
 new ResizeObserver(() => tlDraw()).observe(tlEl);
 // Mouse wheel over the timeline moves through time; dragging along it scrubs to that date.
+// One wheel notch (or a trackpad swipe of the same size) moves exactly one month.
+let tlAcc = 0;
+const addMonths = (t, n) => { const d = new Date(t); const day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n);
+  d.setUTCDate(Math.min(day, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate())); return d.getTime(); };
 tlEl.addEventListener('wheel', (e) => {
   e.preventDefault();
+  if (!STEPS.length) return;
   const dir = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-  const t = Math.max(STEPS[0].t, Math.min(STEPS[STEPS.length - 1].t, (curT ?? Y0) + dir * 0.2 * DAY));
+  tlAcc += e.deltaMode === 1 ? dir * 33 : dir;
+  const n = Math.trunc(tlAcc / 100); if (!n) return;
+  tlAcc -= n * 100;
+  const t = Math.max(STEPS[0].t, Math.min(STEPS[STEPS.length - 1].t, addMonths(curT ?? STEPS[0].t, n)));
   seek(t);
 }, { passive: false });
 let tlDrag = false;
@@ -377,8 +426,9 @@ function restyleTiles() {
 // Real wartime 1:25,000 / 1:12,500 sheets (mostly defence overprints), already georeferenced.
 // Sheets sit on top of the modern map. Where a place has several editions, the one in force on the
 // date being read is shown (the newest edition published on or before that date, else the first).
-let sheetsOn = true, sheetKey = '';
-try { sheetsOn = localStorage.getItem('sp-sheets') !== 'off'; } catch (e) { /* storage blocked */ }
+// Old maps: 'on' (solid), 'see' (see-through, modern map shows underneath) or 'off'.
+let sheetMode = 'on', sheetsOn = true, sheetKey = '';
+try { sheetMode = ['on', 'see', 'off'].includes(localStorage.getItem('sp-sheets')) ? localStorage.getItem('sp-sheets') : 'on'; sheetsOn = sheetMode !== 'off'; } catch (e) { /* storage blocked */ }
 // The scans carry some transparency, so each sheet sits on a plain paper-coloured backing.
 // Where a sheet isn't drawn (zoomed out, or switched off) a dashed outline and its name show it's there.
 const SHEET_PAPER = '#e9e2cc', SHEET_Z = 10;
@@ -419,12 +469,13 @@ function sheetsInForce(t) {
 }
 function syncSheets() {
   if (!tilesReady() || !IDX.sheets || !ML.getLayer('sheet-outline')) return;
-  const on = sheetsInForce(curT), key = sheetsOn + ':' + [...on].join();
+  const on = sheetsInForce(curT), key = sheetMode + ':' + [...on].join();
   if (key === sheetKey) return;
   sheetKey = key;
   for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setLayoutProperty(id, 'visibility', sheetsOn && on.has(m.id) ? 'visible' : 'none'); }
   ML.getSource('sheet-boxes').setData({ type: 'FeatureCollection', features: IDX.sheets.filter((m) => on.has(m.id)).map(sheetBox) });
-  ML.setLayoutProperty('sheet-paper', 'visibility', sheetsOn ? 'visible' : 'none');
+  ML.setLayoutProperty('sheet-paper', 'visibility', sheetMode === 'on' ? 'visible' : 'none');
+  for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setPaintProperty(id, 'raster-opacity', sheetMode === 'see' ? 0.5 : 1); }
   // Outline and name: only while the sheet itself isn't showing.
   for (const id of ['sheet-outline', 'sheet-label', 'sheet-hit']) ML.setLayerZoomRange(id, id === 'sheet-label' ? 7.5 : 0, sheetsOn ? SHEET_Z : 24);
 }
@@ -588,8 +639,9 @@ function drawNow() {
   }
   // Other soldiers, greyed, at the same date.
   const others = [], greyPins = [];
-  if (showOthers && curT != null && me) for (const o of IDX.soldiers) {
-    if (o.id === SELF) continue;
+  if (curT != null && me) for (const id of ROSTER) {
+    if (id === SELF) continue;
+    const o = soldier(id);
     const at = positionAt(o.id, curT); if (!at) continue;
     const km = Math.round(d3.geoDistance(me, at.p) * 6371);
     others.push({ o, at, km });
@@ -611,8 +663,8 @@ function drawNow() {
   }
   for (const { l, q } of lmLabels) label(l.name, q[0] + 9, q[1] + 4, `italic 11px ${C['--f-type']}`, C['--ink'], { tries: [[q[0] + 9, q[1] + 4], [q[0] - 9 - l.name.length * 6.2, q[1] + 4], [q[0] - l.name.length * 3, q[1] + 18]] });
   // Close by: a gold dashed ring around both pins.
-  const ep = curT != null && CLOSE.find((c) => c.soldiers.includes(SELF) && ms(c.from) <= curT && curT <= ms(c.to) + DAY && (c.human_note || c.tier !== 'possibly'));
-  if (ep && me && showOthers) {
+  const ep = curT != null && SELF && CLOSE.find((c) => c.soldiers.includes(SELF) && ms(c.from) <= curT && curT <= ms(c.to) + DAY && (c.human_note || c.tier !== 'possibly'));
+  if (ep && me && ROSTER.includes(ep.soldiers.find((x) => x !== SELF))) {
     const other = ep.soldiers.find((x) => x !== SELF), at = positionAt(other, curT);
     const a = P(me), b = at && P(at.p);
     if (a && b) { const cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2 - 24, rr = Math.max(48, Math.hypot(a[0] - b[0], a[1] - b[1]) / 2 + 36);
@@ -642,6 +694,31 @@ function ageAt(id, t) { const b = soldier(id).born; if (!b) return ''; const d =
 function bdayNear(id, t) { const b = soldier(id).born; if (!b || t == null) return false; const y = new Date(t).getUTCFullYear(); return Math.abs(Date.UTC(y, +b.slice(5, 7) - 1, +b.slice(8, 10)) - t) < 4 * DAY; }
 
 // ---------------- moving between stops ----------------
+// The camera for a point in the story: centred on the soldier, at STOP_K, easing out and back in
+// over long journeys so both ends of the move fit on screen at the middle.
+const STOP_K = 260;
+function camera(pr) {
+  if (pr < 0 || !STEPS.length) return { c: [-30, 48], k: 9000 };
+  const i = Math.floor(pr), f = pr - i, a = STEPS[Math.min(i, STEPS.length - 1)], b = STEPS[Math.min(i + 1, STEPS.length - 1)];
+  if (!(f > 0) || a === b) return { c: a.p, k: STOP_K };
+  const km = d3.geoDistance(a.p, b.p) * 6371, bump = Math.max(0, Math.log(km * 1.3 / STOP_K));
+  return { c: d3.geoInterpolate(a.p, b.p)(f), k: STOP_K * Math.exp(Math.sin(Math.PI * f) * bump) };
+}
+// Ease the view toward the camera a little each frame, so stepping or scrolling never jumps.
+let camTarget = null, camTimer = null;
+function follow(target) {
+  camTarget = target;
+  if (anim || userView) return;
+  if (reduce) { view = { c: target.c.slice(), k: target.k }; draw(); return; }
+  if (camTimer) return;
+  camTimer = d3.timer(() => {
+    if (anim || userView || !camTarget) { camTimer.stop(); camTimer = null; return; }
+    const d = d3.geoDistance(view.c, camTarget.c), lk = Math.log(view.k), tk = Math.log(camTarget.k);
+    if (d < 2e-6 && Math.abs(tk - lk) < 0.002) { view = { c: camTarget.c.slice(), k: camTarget.k }; camTimer.stop(); camTimer = null; draw(); settleSoon(); return; }
+    view.c = d3.geoInterpolate(view.c, camTarget.c)(0.2); view.k = Math.exp(lk + (tk - lk) * 0.2);
+    draw();
+  });
+}
 function go(i) {
   if (i === active) return;
   active = i; hidePop(); userView = false; $('mreset').hidden = true;
@@ -664,7 +741,7 @@ function go(i) {
     const bump = Math.sin(Math.PI * e) * Math.max(0, Math.log(peak) - Math.max(Math.log(from.k), Math.log(target.k)));
     view.k = Math.exp(lk + bump);
     prog = dp >= 0 ? from.p + dp * e : target.p;
-    if (t >= 1) { anim.stop(); anim = null; prog = target.p; }
+    if (t >= 1) { anim.stop(); anim = null; prog = target.p; onScroll(); }
     draw();
   });
 }
@@ -684,10 +761,11 @@ function onScroll() {
   }
   if (window.__pinT != null && curT != null && Math.abs(curT - window.__pinT) < DAY) curT = window.__pinT; else window.__pinT = null;
   go(idx);
+  if (!anim && !userView) follow(camera(prog));
   const s = STEPS[idx];
   $('capDate').textContent = curT != null ? fmtDate(curT) : (STEPS[0] ? 'Before ' + fmtDate(STEPS[0].t) : '');
   $('capAge').textContent = curT != null ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
-  $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : soldier(SELF).name;
+  $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : (SELF ? soldier(SELF).name : '');
   tlMark();
   if (!anim) draw();
 }
@@ -755,7 +833,7 @@ canvas.addEventListener('pointerup', (e) => {
     hidePop();
     const r = canvas.getBoundingClientRect(), sh = sheetAt(e.clientX - r.left, e.clientY - r.top);
     if (sh && (!sheetsOn || tileZoom() < SHEET_Z)) {
-      if (!sheetsOn) setSheets(true);
+      if (!sheetsOn) setSheets('on');
       const km = (sh.b[2] - sh.b[0]) * 111.32 * Math.cos((sh.b[1] + sh.b[3]) / 2 * Math.PI / 180);
       flyTo([(sh.b[0] + sh.b[2]) / 2, (sh.b[1] + sh.b[3]) / 2], Math.max(MIN_K, Math.min(km * 1.2, 40)));
     }
@@ -784,11 +862,16 @@ canvas.addEventListener('wheel', (e) => {
   zoomBy(Math.exp(Math.max(-0.5, Math.min(0.5, e.deltaY * 0.0015))), e.clientX - r.left, e.clientY - r.top);
 }, { passive: false });
 canvas.addEventListener('dblclick', (e) => { const r = canvas.getBoundingClientRect(); zoomBy(0.5, e.clientX - r.left, e.clientY - r.top); });
-{ const tg = $('sheettoggle'); tg.setAttribute('aria-pressed', String(sheetsOn));
-  tg.addEventListener('click', () => setSheets(!sheetsOn)); }
+{ const tg = $('sheettoggle'); showSheetMode();
+  tg.addEventListener('click', () => setSheets({ on: 'see', see: 'off', off: 'on' }[sheetMode])); }
+function showSheetMode() {
+  const tg = $('sheettoggle'), next = { on: 'see-through', see: 'off', off: 'on' }[sheetMode];
+  tg.dataset.mode = sheetMode; tg.setAttribute('aria-pressed', String(sheetMode !== 'off'));
+  tg.title = `1944–45 army maps: ${{ on: 'on', see: 'see-through', off: 'off' }[sheetMode]}. Click for ${next}.`;
+}
 function setSheets(v) {
-  sheetsOn = v; $('sheettoggle').setAttribute('aria-pressed', String(v)); $('sheettoggle').title = v ? 'Hide the 1944–45 army maps' : 'Show the 1944–45 army maps';
-  try { localStorage.setItem('sp-sheets', v ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
+  sheetMode = v; sheetsOn = v !== 'off'; showSheetMode();
+  try { localStorage.setItem('sp-sheets', v); } catch (e) { /* storage blocked */ }
   sheetKey = ''; draw();
 }
 $('zin').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(0.6); });
