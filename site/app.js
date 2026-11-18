@@ -730,6 +730,8 @@ function onScroll() {
   const line = lineY();
   let idx = -1;
   STEPS.forEach((s, i) => { if (s.el.getBoundingClientRect().top < line) idx = i; });
+  // Above the first story (the header), stay on the first story: never zoom out to the whole globe.
+  idx = Math.max(0, idx);
   // The date and place come only from the story being read: the last stop reached. Nothing is guessed in between.
   // After switching soldiers, the date carried over is kept until the reader moves to another stop.
   if (HELD && HELD.idx === idx) curT = HELD.t; else { HELD = null; curT = idx < 0 ? null : STEPS[idx].t; }
