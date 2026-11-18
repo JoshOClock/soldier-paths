@@ -91,7 +91,7 @@ function addSoldier(id) {
 function removeSoldier(id) {
   ROSTER = ROSTER.filter((x) => x !== id);
   if (id === SELF) { buildTabs(); if (ROSTER.length) select(ROSTER[0], curT); else welcome(); }
-  else { buildTabs(); saveHash(); onScroll(); draw(); }
+  else { buildTabs(); select(SELF, curT); }
 }
 // Nobody added yet: a short welcome with the soldiers to choose from.
 function welcome() {
@@ -200,7 +200,7 @@ function renderStory() {
   STEPS = [];
   // Each close-by note appears once, on the stop it was written about (or the first stop it overlaps).
   const crossAt = new Map(), seenNote = new Set(), mine = stopsOf(SELF);
-  for (const c of CLOSE.filter((c) => c.soldiers.includes(SELF) && (c.human_note || c.tier !== 'possibly' || c.km < 25))) {
+  for (const c of CLOSE.filter((c) => c.soldiers.includes(SELF) && ROSTER.includes(c.soldiers.find((x) => x !== SELF)) && (c.human_note || c.tier !== 'possibly' || c.km < 25))) {
     const key = c.human_note ? c.human_note.title : c.from + c.to;
     if (seenNote.has(key)) continue;
     const named = c.human_note && mine.find((st) => c.human_note.events.includes(st.e.event_id));
@@ -641,11 +641,10 @@ function drawNow() {
     }
   }
   for (const { l, q } of lmLabels) label(l.name, q[0] + 9, q[1] + 4, `italic 11px ${C['--f-type']}`, C['--ink'], { tries: [[q[0] + 9, q[1] + 4], [q[0] - 9 - l.name.length * 6.2, q[1] + 4], [q[0] - l.name.length * 3, q[1] + 18]] });
-  // Close by: a gold dashed ring around both pins.
-  const ep = curT != null && SELF && CLOSE.find((c) => c.soldiers.includes(SELF) && ms(c.from) <= curT && curT <= ms(c.to) + DAY && (c.human_note || c.tier !== 'possibly'));
-  if (ep && me && ROSTER.includes(ep.soldiers.find((x) => x !== SELF))) {
-    const other = ep.soldiers.find((x) => x !== SELF), at = positionAt(other, curT);
-    const a = P(me), b = at && P(at.p);
+  // Close by: a gold dashed ring around him and whoever else on the map is within 10 km on this date.
+  const near = others.filter((x) => x.km <= 10).sort((x, y) => x.km - y.km)[0];
+  if (near && me) {
+    const a = P(me), b = P(near.at.p);
     if (a && b) { const cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2 - 24, rr = Math.max(48, Math.hypot(a[0] - b[0], a[1] - b[1]) / 2 + 36);
       if (rr < Math.min(W, H) * 0.45) { ctx.save(); ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = C['--gold']; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); ctx.setLineDash([]);
         ctx.restore(); label('✦ Close by', cx - 36, cy + rr + 16, `600 12px ${C['--f-type']}`, C['--gold'], { tries: [[cx - 36, cy + rr + 16], [cx - 36, cy - rr - 6]] }); } }
