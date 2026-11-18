@@ -1,8 +1,9 @@
 # Nightly unit-path job
 
 A scheduled Claude task runs this once a night. It works **on demand**: it only gathers locations for units that
-soldiers on the site actually belong to, one chapter of the official history per run. Each run's work goes on a
-branch for Josh to review. It never touches `main`.
+soldiers on the site actually belong to, one chapter of the official history per run. There is one line of history: each run
+commits straight to `main`, and the live site rebuilds from it. Everything the job adds is marked `ai_draft`, which the
+site shows as "AI reading, not yet checked".
 
 ## Which units ("wanted units")
 
@@ -15,7 +16,7 @@ branch for Josh to review. It never touches `main`.
 
 ## What a run does
 
-1. Clone `JoshOClock/soldier-paths`, check out (or create) the branch `auto/unit-paths`, and merge `main` into it.
+1. Clone `JoshOClock/soldier-paths` and work on `main`. Don't create branches.
 2. Read `data/import/pipeline_state.json` (create it if missing). It records, per chapter, which units have been
    extracted: `{"done": {"7": ["2-cdn-inf-div", "2-cdn-atk-regt"]}, "runs": [...]}`.
 3. Work out the wanted units (above). Pick the **one** chapter from the queue below, earliest in the war first, whose
@@ -46,8 +47,7 @@ branch for Josh to review. It never touches `main`.
 7. Run `npm ci && npm run build`. Fix any validation errors the build reports. Never delete or change rows
    another run or a person wrote; only add.
 8. Record the chapter and units in `pipeline_state.json` (`done` plus a `runs` entry: date, chapter, units, rows_added).
-9. Commit with a message listing the chapter, units and number of rows, and push the branch.
-   Cloudflare Pages builds a preview of the branch at `https://auto-unit-paths.soldier-paths.pages.dev`.
+9. Commit with a message listing the chapter, units and number of rows. Don't push yet (see Finishing).
 
 **One chapter per run. Stop after it**, then do the soldier records, close-by notes and archive photos below. Don't start a second chapter even if
 there's time left.
@@ -175,6 +175,9 @@ Rules:
 
 ## Finishing
 
-Push the branch after all four steps. End with a short plain-language summary for Josh: chapter and units, locations added,
+After all four steps, `git pull --rebase origin main` (someone may have pushed during the run), run
+`npm run build` once more, and push to `main` only if it passes. If the rebase conflicts in a CSV, keep both sides'
+rows. If the build won't pass, push nothing and say why in the summary. Cloudflare Pages updates
+https://soldier-paths.pages.dev a minute or two after the push. End with a short plain-language summary for Josh: chapter and units, locations added,
 soldiers looked up (what was found, possible matches with links), close-by notes drafted, photos added (with places),
 and anything you weren't sure about.
