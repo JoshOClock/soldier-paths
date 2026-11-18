@@ -190,6 +190,13 @@ function quoteBlock(q) {
   return `<blockquote class="${cls}"><div class="jl">${esc(q.label || src.title)}</div>${body}</blockquote>`;
 }
 const SECONDARY = new Set(['book', 'article']);
+// Archive photos taken near a stop (within about 12 km and 10 days), shown in the story as well as on the map.
+function photosNear(st) {
+  return (IDX.photos || []).filter((ph) => ms(ph.from) - 10 * DAY <= st.t && st.t <= ms(ph.to) + 10 * DAY && d3.geoDistance([ph.lon, ph.lat], st.p) * 6371 <= 12).slice(0, 3);
+}
+function archiveFigure(ph) {
+  return `<figure class="clip archive"><img src="${esc(ph.img)}" alt="${esc(ph.t)}" loading="lazy"><figcaption><b>${esc(ph.t)}</b>, ${esc(ph.d)}. ${esc(ph.c)} <span class="srcl"><a href="${esc(ph.url)}" target="_blank" rel="noopener">${esc(ph.credit)}</a></span></figcaption></figure>`;
+}
 function figure(m) {
   const src = IDX.sources[m.source_id];
   const credit = [m.credit, m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">source</a>` : ''].filter(Boolean).join(' · ');
@@ -252,7 +259,7 @@ function renderStory() {
         <h3>${esc(e.detail)}</h3>
         <p class="where">${esc(place(e.place_id).name)}${u.main ? ' · ' + esc(u.main) : ''}${u.disputed.length ? ' · ' + esc(u.disputed.join(' or ')) + ' (sources disagree)' : ''}</p>
         ${cross.map((c) => crossHtml(c)).join('')}
-        ${primary.map(quoteBlock).join('')}${(doc.media || []).filter((m) => m.event_id === e.event_id).map(figure).join('')}
+        ${primary.map(quoteBlock).join('')}${(doc.media || []).filter((m) => m.event_id === e.event_id).map(figure).join('')}${photosNear(st).map(archiveFigure).join('')}
         ${!e.quotes.length ? `<p class="note">${esc(e.note || 'No quoted source yet.')}</p>` : ''}
         ${secondary.length ? `<details class="more"><summary>More</summary>${secondary.map(quoteBlock).join('')}</details>` : ''}
         <p class="conf"><span class="${cc}">${esc(cl)}</span>${e.status === 'ai_draft' ? '<span class="c-ai">AI reading, not yet checked</span>' : ''}</p>
