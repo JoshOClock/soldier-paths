@@ -254,3 +254,7 @@ figure.clip img{width:min(100%,560px);height:auto;display:block;border:1px solid
 figure.pano .panoscroll{overflow-x:auto;border:1px solid var(--border)}
 figure.pano img{height:260px;width:auto;max-width:none;display:block}
 figure.clip img{background:#fff}
+.pop.photo{max-width:340px}
+.pop img{display:block;width:100%;height:auto;margin:6px 0 8px;border:1px solid var(--border);background:#ddd}
+.pop .popc{font-family:var(--f-type);font-size:11.5px;color:var(--muted);margin-top:6px}
+.pop .popc a{color:var(--muted)}

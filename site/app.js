@@ -551,6 +551,16 @@ function facePin(q, id, grey, text, dx = 0) {
   if (text) label(text, x + r + 7, y + 4, `12px ${C['--f-type']}`, grey ? C['--muted'] : C['--ink'], { tries: [[x + r + 7, y + 4], [x - r - 7 - ctx.measureText(text).width, y + 4], [x - 20, y - r - 6]] });
 }
 
+// Photos show from a little before to a little after their date.
+const PHOTO_DAYS = 21;
+function camIcon(x, y) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = C['--paper']; ctx.strokeStyle = C['--ink']; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.rect(-8, -5, 16, 11); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.rect(-3.5, -7.5, 7, 2.5); ctx.fillStyle = C['--ink']; ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0.5, 3.2, 0, 7); ctx.fillStyle = C['--paper']; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
 function edgePin(from, to, id, label) {
   // The other soldier is off screen: a greyed pin on the edge, pointing his way.
   const a = P(from); if (!a) return;
@@ -622,6 +632,14 @@ function drawNow() {
       ctx.beginPath(); ctx.moveTo(0, -3.6); ctx.lineTo(0, 3.6); ctx.moveTo(-2.6, -1.2); ctx.lineTo(2.6, -1.2); ctx.lineWidth = 1.5; ctx.strokeStyle = C['--ink']; ctx.stroke(); }
     ctx.restore();
     if (view.k <= 160 || (l.kind === 'battle' && view.k <= 300)) lmLabels.push({ l, q });
+  }
+  // Photos taken near here around this date: camera icons, tap for the picture.
+  if (curT != null && view.k <= 400) for (const ph of IDX.photos || []) {
+    const lo = ms(ph.from) - PHOTO_DAYS * DAY, hi = ms(ph.to) + PHOTO_DAYS * DAY;
+    if (curT < lo || curT > hi) continue;
+    const p = [ph.lon, ph.lat], q = P(p); if (!q || !vis(p) || q[0] < 0 || q[0] > W || q[1] < 0 || q[1] > H) continue;
+    HITS.push({ x: q[0], y: q[1], photo: ph });
+    camIcon(q[0], q[1]);
   }
   // Other soldiers, greyed, at the same date.
   const others = [], greyPins = [];
@@ -831,7 +849,16 @@ canvas.addEventListener('pointerup', (e) => {
     }
     return;
   }
-  $('popt').textContent = h.l.name; $('popd').textContent = h.l.d || '';
+  if (h.photo) {
+    const ph = h.photo;
+    $('popt').textContent = ph.t; $('popd').textContent = `${ph.d}. ${ph.c}`;
+    $('popimg').src = ph.img; $('popimg').alt = ph.t; $('popimg').hidden = false;
+    $('popc').innerHTML = `<a href="${esc(ph.url)}" target="_blank" rel="noopener">${esc(ph.credit)}</a>${ph.lic ? ' · ' + esc(ph.lic) : ''}`; $('popc').hidden = false;
+    pop.classList.add('photo');
+  } else {
+    $('popt').textContent = h.l.name; $('popd').textContent = h.l.d || '';
+    $('popimg').hidden = true; $('popimg').removeAttribute('src'); $('popc').hidden = true; pop.classList.remove('photo');
+  }
   pop.hidden = false; const pw = pop.offsetWidth, ph = pop.offsetHeight; let x = h.x + 14, y = h.y - ph / 2;
   if (x + pw > W - 8) x = h.x - 14 - pw; pop.style.left = Math.max(8, x) + 'px'; pop.style.top = Math.max(8, Math.min(H - ph - 8, y)) + 'px';
 });
