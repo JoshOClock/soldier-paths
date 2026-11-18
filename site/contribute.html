@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Add a soldier · Soldier Paths</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="contribute.css">
+</head>
+<body class="contrib">
+<nav class="tabs"><a class="back" href="./">← Soldier Paths</a></nav>
+<main class="cpage">
+  <p class="kicker">Soldier Paths · add a soldier</p>
+  <h1>Add someone from your family</h1>
+  <p class="lede">If someone in your family served in the Second World War, you can add him to the map. You don't need to know anything about maps or data. Your own AI assistant (ChatGPT, Claude, Gemini or similar) reads your documents and writes them up in the form this site needs. You check the result here, then send it in.</p>
+
+  <section class="cstep">
+    <h2><span>1</span> Gather what you have</h2>
+    <p>Anything helps. The most useful, roughly in order:</p>
+    <ul>
+      <li>His service file from Library and Archives Canada, or his discharge certificate</li>
+      <li>Newspaper clippings, obituaries, letters home</li>
+      <li>Photos, especially with writing on the back</li>
+      <li>What the family remembers: his unit, where he went, stories he told</li>
+    </ul>
+    <p class="small">Photos of pages are fine. Leave out anything about people who are still living.</p>
+  </section>
+
+  <section class="cstep">
+    <h2><span>2</span> Give your AI this prompt and your documents</h2>
+    <p>Copy the prompt, start a new chat with your AI, paste it in, then attach or paste your documents. Add anything you know from memory in your own words.</p>
+    <div class="promptbox">
+      <button type="button" id="copyPrompt" class="cbtn">Copy the prompt</button>
+      <pre id="prompt">Loading…</pre>
+    </div>
+  </section>
+
+  <section class="cstep">
+    <h2><span>3</span> Paste the AI's answer here</h2>
+    <p>Paste its whole reply. This page checks it and shows you what would go on the map. Nothing is sent yet.</p>
+    <textarea id="paste" rows="10" spellcheck="false" placeholder="Paste the AI's reply here"></textarea>
+    <div class="row"><button type="button" id="check" class="cbtn">Check it</button> <button type="button" id="example" class="cbtn ghost">Try an example</button></div>
+    <div id="result" aria-live="polite"></div>
+  </section>
+
+  <section class="cstep" id="sendStep" hidden>
+    <h2><span>4</span> Send it in</h2>
+    <p>Submissions are read by a person before anything goes on the site. Each fact keeps a note of where it came from, and anything from family memory is marked as such.</p>
+    <label class="consent"><input type="checkbox" id="ok1"> The soldier has died, and nothing here is about a living person except my name and relationship.</label>
+    <label class="consent"><input type="checkbox" id="ok2"> I'm happy for this to be shown publicly on Soldier Paths with the sources listed.</label>
+    <div class="row">
+      <button type="button" id="download" class="cbtn" disabled>Download the file</button>
+      <button type="button" id="github" class="cbtn ghost" disabled>Send through GitHub</button>
+    </div>
+    <p class="small">"Send through GitHub" copies your file and opens a submission form; paste it in there (it needs a free GitHub account, and the form is public). Or download the file and send it to whoever pointed you to this site.</p>
+  </section>
+</main>
+<script src="data/vendor/d3.min.js"></script>
+<script src="data/vendor/topojson-client.min.js"></script>
+<script type="module" src="contribute.js"></script>
+</body>
+</html>

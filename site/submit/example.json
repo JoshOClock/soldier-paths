@@ -1,0 +1,35 @@
+Here is the soldier in the Soldier Paths format:
+
+```json
+{
+  "format": "soldier-paths/1",
+  "submitted_by": { "name": "Josh Brown", "relationship": "grandson" },
+  "soldier": {
+    "name": "Gordon Carlyle Sweet",
+    "known_as": "Gordon",
+    "rank": "Captain",
+    "service_number": "M29601",
+    "branch": "army",
+    "born": { "date": "23 Feb 1914", "place": "Yellow Grass, Saskatchewan" },
+    "died": { "date": null, "place": null },
+    "hometown": "Lacombe, Alberta"
+  },
+  "units": [
+    { "name": "17th Field Ambulance, RCAMC (later 17th Light Field Ambulance)", "from": "3 Oct 1941", "to": "1945", "role": "Quartermaster", "source": "s1", "confidence": "documented" }
+  ],
+  "events": [
+    { "date": "23 Feb 1914", "kind": "birth", "what": "Born in Yellow Grass", "place": { "name": "Yellow Grass, Saskatchewan", "lat": 49.81, "lon": -104.18, "precision_km": 2 }, "source": "s1", "page": "p. 14", "quote": "", "confidence": "documented", "note": "Attestation paper" },
+    { "date": "3 Oct 1941", "kind": "enlistment", "what": "Enlists as a private in the 17th Field Ambulance", "place": { "name": "Edmonton, Alberta", "lat": 53.55, "lon": -113.49, "precision_km": 5 }, "source": "s1", "page": "p. 14", "quote": "", "confidence": "documented", "note": "" },
+    { "date": "16 Jun 1943", "kind": "embarkation", "what": "Sails for England", "place": { "name": "Liverpool, England", "lat": 53.41, "lon": -2.98, "precision_km": 5 }, "source": "s2", "page": "p. 6", "quote": "In a cable received this (Wednesday) morning by his parents", "confidence": "documented", "note": "" },
+    { "date": "about 19 Jun 1944", "kind": "location", "what": "Lands in Normandy with his unit", "place": { "name": "Juno Beach, France", "lat": 49.34, "lon": -0.42, "precision_km": 10 }, "source": "s3", "page": "", "quote": "", "confidence": "estimated", "note": "The family history gives about two weeks after D-Day" },
+    { "date": "Dec 1945", "kind": "award", "what": "Member of the Order of the British Empire", "place": { "name": "Apeldoorn, Netherlands", "lat": 52.21, "lon": 5.97, "precision_km": 30 }, "source": "s4", "page": "pp. 1 and 3", "quote": "Capt. G. C. Sweet, Lacombe", "confidence": "documented", "note": "Place is where his unit was; the paper doesn't say" }
+  ],
+  "sources": [
+    { "id": "s1", "kind": "service_file", "title": "Service file of Capt. G.C. Sweet, M29601", "date": "", "url": "", "where_held": "Library and Archives Canada" },
+    { "id": "s2", "kind": "newspaper", "title": "Lacombe Globe, June 30, 1943, p. 6", "date": "1943-06-30", "url": "", "where_held": "" },
+    { "id": "s3", "kind": "family", "title": "Family history of his service", "date": "", "url": "", "where_held": "Sweet family" },
+    { "id": "s4", "kind": "newspaper", "title": "Edmonton Bulletin, Dec. 14, 1945", "date": "1945-12-14", "url": "", "where_held": "" }
+  ],
+  "notes": "Example only."
+}
+```

@@ -1,0 +1,31 @@
+name: Add a soldier
+description: Send a soldier made on the Soldier Paths "Add a soldier" page.
+title: "Soldier: "
+labels: ["submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Paste the file from the Soldier Paths "Add a soldier" page below. This form is public, so leave out anything about living people.
+  - type: textarea
+    id: json
+    attributes:
+      label: Soldier file
+      description: Paste the whole file (it starts with { and ends with }).
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Optional. Photos can be dragged in here.
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Before sending
+      options:
+        - label: The soldier has died, and nothing here is about a living person except my name and relationship.
+          required: true
+        - label: I'm happy for this to be shown publicly on Soldier Paths with the sources listed.
+          required: true

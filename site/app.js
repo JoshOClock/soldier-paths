@@ -12,7 +12,9 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const first = (name) => name.split(' ')[0];
 const fmtDate = (t) => new Date(t).toLocaleDateString('en-CA', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '');
 
-let GEO, IDX, CLOSE, LAND, BORDERS, DOCS = {}, SELF, STEPS = [], curT = null, active = -1, showOthers = true;
+let GEO, IDX, CLOSE, LAND, BORDERS, DOCS = {}, SELF = null, STEPS = [], curT = null, active = -1;
+// The soldiers the reader has added. The map shows only these; the story follows SELF, one of them.
+let ROSTER = [];
 const FACES = {};
 
 // ---------------- data ----------------
@@ -27,13 +29,21 @@ async function boot() {
     DOCS[s.id] = await fetch(`data/soldier/${s.id}.json`).then((r) => r.json());
     if (s.face) { const im = new Image(); im.onload = () => draw(); im.src = s.face; FACES[s.id] = im; }
   }));
+  await Promise.all((IDX.unitpaths || []).map(async (u) => { DOCS[u.id] = await fetch(`data/soldier/${u.id}.json`).then((r) => r.json()); }));
+  // The address remembers who's added and who's being read: #show=a,b&on=a (an old #a still works).
+  const h = new URLSearchParams(location.hash.slice(1)), known = (id) => !!soldier(id);
+  const old = location.hash.slice(1);
+  ROSTER = (h.get('show') || (known(old) ? old : '')).split(',').filter(known);
+  const on = h.get('on') || ROSTER[0];
   buildTabs();
-  const want = location.hash.slice(1);
-  select(IDX.soldiers.some((s) => s.id === want) ? want : IDX.soldiers[0].id, null);
+  if (ROSTER.includes(on)) select(on, null); else welcome();
 }
 
 const place = (id) => IDX.places[id];
-const soldier = (id) => IDX.soldiers.find((s) => s.id === id);
+const soldier = (id) => IDX.soldiers.find((s) => s.id === id) || (IDX.unitpaths || []).find((u) => u.id === id);
+const isUnit = (id) => soldier(id)?.kind === 'unit';
+// Short name for labels: a man's first name, a unit's short name.
+const who = (id) => isUnit(id) ? soldier(id).short : first(soldier(id).name);
 
 // Where a soldier is at time t: his own stops in order, interpolated along the way between them.
 const STOPS = {};
@@ -48,26 +58,68 @@ function positionAt(id, t) {
   return { stop: st[i], p: st[i].p, name: place(st[i].e.place_id).name, i };
 }
 
-// ---------------- tabs ----------------
+// ---------------- tabs: the soldiers added, plus "+ Add" ----------------
+function saveHash() {
+  const q = ROSTER.length ? `show=${ROSTER.join(',')}${SELF ? '&on=' + SELF : ''}` : '';
+  history.replaceState(null, '', q ? '#' + q : location.pathname);
+}
 function buildTabs() {
   const nav = $('tabs');
-  nav.innerHTML = IDX.soldiers.map((s) => `<button role="tab" data-id="${s.id}" aria-selected="false">${esc(s.name.replace(/,.*$/, ''))}</button>`).join('') +
-    `<button type="button" class="eye" id="eye" aria-pressed="true" title="Show or hide the other soldiers on the map">others on map</button>`;
+  const rest = IDX.soldiers.filter((s) => !ROSTER.includes(s.id)), restU = (IDX.unitpaths || []).filter((u) => !ROSTER.includes(u.id));
+  nav.innerHTML = ROSTER.map((id) => { const s = soldier(id);
+    return `<span class="tab${isUnit(id) ? ' unit' : ''}"><button role="tab" data-id="${id}" aria-selected="${id === SELF}">${esc(isUnit(id) ? s.short : s.name.replace(/,.*$/, ''))}</button><button type="button" class="tabx" data-id="${id}" aria-label="Remove ${esc(s.name)}" title="Remove from the map">×</button></span>`; }).join('')
+    + `<div class="addwrap"><button type="button" class="addbtn" id="addbtn" aria-expanded="false"${rest.length + restU.length ? '' : ' disabled'}>+ Add</button>`
+    + `<div class="addmenu" id="addmenu" hidden>${IDX.soldiers.length > 8 ? '<input type="search" id="addq" placeholder="Search by name" aria-label="Search soldiers">' : ''}<ul>`
+    + (rest.length ? '<li class="mh">Soldiers</li>' : '') + rest.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(s.name.toLowerCase())}">${esc(s.name)}<span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')
+    + (restU.length ? '<li class="mh">Units</li>' : '') + restU.map((u) => `<li><button type="button" data-id="${u.id}" data-name="${esc(u.name.toLowerCase())}">${esc(u.name)}<span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')
+    + `</ul><a href="contribute.html">Not here? Add someone from your family →</a></div></div>`;
   nav.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => select(b.dataset.id, curT)));
-  $('eye').addEventListener('click', (e) => { showOthers = !showOthers; e.target.setAttribute('aria-pressed', showOthers); draw(); });
+  nav.querySelectorAll('.tabx').forEach((b) => b.addEventListener('click', () => removeSoldier(b.dataset.id)));
+  const ab = $('addbtn'), menu = $('addmenu');
+  ab.addEventListener('click', () => { menu.hidden = !menu.hidden; ab.setAttribute('aria-expanded', !menu.hidden); if (!menu.hidden) $('addq')?.focus(); });
+  menu.querySelectorAll('li button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
+  $('addq')?.addEventListener('input', (e) => { const q = e.target.value.toLowerCase(); menu.querySelectorAll('li:not(.mh)').forEach((li) => { li.hidden = !li.firstChild.dataset.name.includes(q); }); });
   const h = () => document.documentElement.style.setProperty('--tabh', nav.offsetHeight + 'px');
   h(); addEventListener('resize', h);
 }
+document.addEventListener('click', (e) => { const m = $('addmenu'); if (m && !m.hidden && !e.target.closest('.addwrap')) { m.hidden = true; $('addbtn').setAttribute('aria-expanded', 'false'); } });
+function addSoldier(id) {
+  if (!ROSTER.includes(id)) ROSTER.push(id);
+  buildTabs();
+  select(id, curT);
+}
+function removeSoldier(id) {
+  ROSTER = ROSTER.filter((x) => x !== id);
+  if (id === SELF) { buildTabs(); if (ROSTER.length) select(ROSTER[0], curT); else welcome(); }
+  else { buildTabs(); select(SELF, curT); }
+}
+// Nobody added yet: a short welcome with the soldiers to choose from.
+function welcome() {
+  SELF = null; STEPS = []; curT = null; active = -1; prog = -1; saveHash();
+  $('story').innerHTML = `<section class="welcome"><div class="eyebrow">Soldier Paths · Second World War</div><h1>Follow a soldier</h1>
+    <p>Pick someone to follow across the map, then add others to see where they were on the same day.</p>
+    <ul class="pick">${IDX.soldiers.map((s) => `<li><button type="button" data-id="${s.id}">${s.face ? `<img src="${esc(s.face)}" alt="" width="48" height="48">` : ''}<b>${esc(s.name)}</b><span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>
+    ${(IDX.unitpaths || []).length ? `<h2 class="wh">Or follow a unit</h2><ul class="pick units">${IDX.unitpaths.map((u) => `<li><button type="button" data-id="${u.id}"><b>${esc(u.name)}</b><span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>` : ''}
+    <p class="small"><a href="contribute.html">Add someone from your family →</a></p></section>`;
+  document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
+  tlEl.innerHTML = ''; tlG = null;
+  $('capDate').textContent = ''; $('capAge').textContent = ''; $('capPlace').textContent = ''; $('capOther').textContent = '';
+  if (anim) anim.stop(); anim = null;
+  flyTo([-30, 48], 9000); userView = false; $('mreset').hidden = true;
+  draw();
+}
 
 function select(id, keepT) {
+  if (!ROSTER.includes(id)) { ROSTER.push(id); buildTabs(); }
   SELF = id;
-  history.replaceState(null, '', '#' + id);
+  saveHash();
   document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.id === id));
   renderStory();
   // Keep the globe where it is; go() then glides from the current view to the new soldier's stop.
   active = -2; curT = null; switching = true;
   tlDraw();
-  if (keepT != null) requestAnimationFrame(() => seek(keepT)); else { scrollTo(0, 0); onScroll(); }
+  // Carry the date over when switching between soldiers; otherwise start at his first story.
+  requestAnimationFrame(() => { if (keepT != null) seek(keepT); else if (STEPS.length) seekStep(0); else { scrollTo(0, 0); onScroll(); } });
 }
 
 // ---------------- story ----------------
@@ -126,6 +178,11 @@ function quoteBlock(q) {
   return `<blockquote class="${cls}"><div class="jl">${esc(q.label || src.title)}</div>${body}</blockquote>`;
 }
 const SECONDARY = new Set(['book', 'article']);
+function figure(m) {
+  const src = IDX.sources[m.source_id];
+  const credit = [m.credit, m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">source</a>` : ''].filter(Boolean).join(' · ');
+  return `<figure class="${m.kind === 'portrait' ? 'portrait' : 'clip'}"><img src="${esc(m.src)}" alt="${esc(m.caption)}" loading="lazy"><figcaption>${esc(m.caption)}${credit ? ` <span class="srcl">${credit}</span>` : ''}</figcaption></figure>`;
+}
 const CONF = { documented: ['c-doc', 'documented'], family: ['c-fam', 'family record'], inherited: ['c-inf', 'from his unit'], inferred: ['c-inf', 'estimated'] };
 
 function closeFor(id, from, to) {
@@ -141,13 +198,15 @@ function renderStory() {
     <div class="eyebrow">Soldier Paths · Second World War${doc.soldier.service_number ? ' · ' + esc(doc.soldier.service_number) : ''}</div>
     <h1>${esc(s.name)}</h1>
     <p class="unit">${esc(s.unit)}</p>
-    <p class="lede">${esc(doc.soldier.rank)}. Born ${esc(born)}${bp ? ', ' + esc(bp) : ''}. Every stop below quotes its source exactly. Positions between stops are estimated, and a "close by" note never means the men met unless a record says so.</p>
+    ${isUnit(SELF) ? `<p class="lede">Where this unit was, stop by stop, from the official history and war diaries. Each stop quotes its source. These are drafts read by AI and not yet checked by a person.</p>`
+    : `<p class="lede">${esc(doc.soldier.rank)}. Born ${esc(born)}${bp ? ', ' + esc(bp) : ''}. Every stop below quotes its source. The map puts him only where a record does: his own papers, or his unit's when his own go quiet. A "close by" note never means the men met unless a record says so.</p>`}
+    ${(doc.media || []).filter((m) => m.kind === 'portrait').map(figure).join('')}
     <p class="hint">Scroll to follow him. The timeline beside the map is to scale.</p>
   </header>`;
   STEPS = [];
   // Each close-by note appears once, on the stop it was written about (or the first stop it overlaps).
   const crossAt = new Map(), seenNote = new Set(), mine = stopsOf(SELF);
-  for (const c of CLOSE.filter((c) => c.soldiers.includes(SELF) && (c.human_note || c.tier !== 'possibly' || c.km < 25))) {
+  for (const c of CLOSE.filter((c) => c.soldiers.includes(SELF) && ROSTER.includes(c.soldiers.find((x) => x !== SELF)) && (c.human_note || c.tier !== 'possibly' || c.km < 25))) {
     const key = c.human_note ? c.human_note.title : c.from + c.to;
     if (seenNote.has(key)) continue;
     const named = c.human_note && mine.find((st) => c.human_note.events.includes(st.e.event_id));
@@ -169,15 +228,15 @@ function renderStory() {
       const toIso = next ? new Date(next.t - DAY).toISOString().slice(0, 10) : '1999-12-31';
       const u = unitOn(SELF, e.start);
       const [cc, cl] = CONF[e.confidence] || ['c-inf', e.confidence];
-      const primary = e.quotes.filter((q) => !SECONDARY.has(IDX.sources[q.source_id]?.kind));
-      const secondary = e.quotes.filter((q) => SECONDARY.has(IDX.sources[q.source_id]?.kind));
+      const primary = e.kind === 'unit' ? e.quotes : e.quotes.filter((q) => !SECONDARY.has(IDX.sources[q.source_id]?.kind));
+      const secondary = e.kind === 'unit' ? [] : e.quotes.filter((q) => SECONDARY.has(IDX.sources[q.source_id]?.kind));
       const cross = (crossAt.get(e.event_id) || []);
       html += `<article class="step" data-i="${i}">
         <div class="date">${esc(e.date)}</div>
         <h3>${esc(e.detail)}</h3>
         <p class="where">${esc(place(e.place_id).name)}${u.main ? ' · ' + esc(u.main) : ''}${u.disputed.length ? ' · ' + esc(u.disputed.join(' or ')) + ' (sources disagree)' : ''}</p>
         ${cross.map((c) => crossHtml(c)).join('')}
-        ${primary.map(quoteBlock).join('')}
+        ${primary.map(quoteBlock).join('')}${(doc.media || []).filter((m) => m.event_id === e.event_id).map(figure).join('')}
         ${!e.quotes.length ? `<p class="note">${esc(e.note || 'No quoted source yet.')}</p>` : ''}
         ${secondary.length ? `<details class="more"><summary>More</summary>${secondary.map(quoteBlock).join('')}</details>` : ''}
         <p class="conf"><span class="${cc}">${esc(cl)}</span>${e.status === 'ai_draft' ? '<span class="c-ai">AI reading, not yet checked</span>' : ''}</p>
@@ -194,21 +253,17 @@ function renderStory() {
   html += `<p>Built from the project's data files on ${esc(IDX.built)}. Spotted something wrong? Every stop shows the source it comes from.</p></section>`;
   $('story').innerHTML = html;
   STEPS.forEach((s, i) => { s.el = document.querySelector(`.step[data-i="${i}"]`); });
-  // Zoom for each stop: wide for long moves, close for short ones.
-  STEPS.forEach((s, i) => {
-    const prev = STEPS[i - 1];
-    const km = prev ? d3.geoDistance(prev.p, s.p) * 6371 : 600;
-    s.k = Math.max(70, Math.min(5200, km * 1.5 + 40));
-  });
+  // Every stop is shown at the same scale, so zooming is predictable; long moves zoom out on the way (camera()).
+  STEPS.forEach((s) => { s.k = STOP_K; });
   document.querySelectorAll('.crossgo').forEach((b) => b.addEventListener('click', () => select(b.dataset.other, curT)));
   bindGloss();
 }
 
 function crossHtml(c) {
-  const other = c.soldiers.find((x) => x !== SELF), on = first(soldier(other).name);
+  const other = c.soldiers.find((x) => x !== SELF), on = who(other);
   const title = c.human_note ? c.human_note.title : (c.tier === 'likely' ? 'within about 10 km' : 'possibly within 10 km');
   const text = c.human_note ? c.human_note.text : c.note;
-  return `<aside class="cross" data-other="${other}"><div class="crossh">✦ Close by · ${esc(title)}</div><p>${esc(text)}</p>
+  return `<aside class="cross" data-other="${other}"><div class="crossh">✦ Close by · ${esc(title)}${c.human_note?.status === 'ai_draft' ? ' <span class="c-ai">AI draft, not yet checked</span>' : ''}</div><p>${esc(text)}</p>
     <button type="button" class="crossgo" data-other="${other}">See where ${esc(on)} was →</button></aside>`;
 }
 
@@ -257,12 +312,6 @@ function tlDraw() {
   tlEl.innerHTML = svg;
   tlG = { vert, pos, bx, bw, left };
   tlG.toT = (v) => vert ? Y0 + (v - top) / (bot - top) * (Y1 - Y0) : Y0 + (v - left) / (right - left) * (Y1 - Y0);
-  tlEl.querySelector('svg').addEventListener('click', (e) => {
-    const rr = tlEl.getBoundingClientRect(), v = vert ? e.clientY - rr.top : e.clientX - rr.left;
-    let best = 0, bd = 1e9;
-    STEPS.forEach((s, i) => { const p = s.t < Y0 ? (vert ? 42 : left) : pos(Math.min(s.t, Y1)); const d = Math.abs(p - v); if (d < bd) { bd = d; best = i; } });
-    seek(STEPS[best].t, true);
-  });
   tlMark();
 }
 function tlMark() {
@@ -277,23 +326,8 @@ function tlMark() {
   else { lab.setAttribute('x', Math.max(30, Math.min(tlEl.clientWidth - 30, p))); lab.textContent = `${dm} ${y}`; }
 }
 new ResizeObserver(() => tlDraw()).observe(tlEl);
-// Mouse wheel over the timeline moves through time; dragging along it scrubs to that date.
-tlEl.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const dir = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-  const t = Math.max(STEPS[0].t, Math.min(STEPS[STEPS.length - 1].t, (curT ?? Y0) + dir * 0.2 * DAY));
-  seek(t);
-}, { passive: false });
-let tlDrag = false;
-tlEl.addEventListener('pointerdown', (e) => { tlDrag = true; tlEl.setPointerCapture(e.pointerId); });
-tlEl.addEventListener('pointermove', (e) => {
-  if (!tlDrag || !tlG) return;
-  const rr = tlEl.getBoundingClientRect(), v = tlG.vert ? e.clientY - rr.top : e.clientX - rr.left;
-  seek(Math.max(STEPS[0].t, Math.min(Y1, tlG.toT(v))));
-});
-tlEl.addEventListener('pointerup', () => { tlDrag = false; });
-tlEl.addEventListener('pointercancel', () => { tlDrag = false; });
-tlEl.style.touchAction = 'none';
+// The timeline only shows where the story is; reading the story moves it.
+
 
 // ---------------- map ----------------
 const canvas = $('map'), ctx = canvas.getContext('2d'), box = $('mapbox');
@@ -377,8 +411,9 @@ function restyleTiles() {
 // Real wartime 1:25,000 / 1:12,500 sheets (mostly defence overprints), already georeferenced.
 // Sheets sit on top of the modern map. Where a place has several editions, the one in force on the
 // date being read is shown (the newest edition published on or before that date, else the first).
-let sheetsOn = true, sheetKey = '';
-try { sheetsOn = localStorage.getItem('sp-sheets') !== 'off'; } catch (e) { /* storage blocked */ }
+// Old maps: 'on' (solid), 'see' (see-through, modern map shows underneath) or 'off'.
+let sheetMode = 'on', sheetsOn = true, sheetKey = '';
+try { sheetMode = ['on', 'see', 'off'].includes(localStorage.getItem('sp-sheets')) ? localStorage.getItem('sp-sheets') : 'on'; sheetsOn = sheetMode !== 'off'; } catch (e) { /* storage blocked */ }
 // The scans carry some transparency, so each sheet sits on a plain paper-coloured backing.
 // Where a sheet isn't drawn (zoomed out, or switched off) a dashed outline and its name show it's there.
 const SHEET_PAPER = '#e9e2cc', SHEET_Z = 10;
@@ -419,12 +454,13 @@ function sheetsInForce(t) {
 }
 function syncSheets() {
   if (!tilesReady() || !IDX.sheets || !ML.getLayer('sheet-outline')) return;
-  const on = sheetsInForce(curT), key = sheetsOn + ':' + [...on].join();
+  const on = sheetsInForce(curT), key = sheetMode + ':' + [...on].join();
   if (key === sheetKey) return;
   sheetKey = key;
   for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setLayoutProperty(id, 'visibility', sheetsOn && on.has(m.id) ? 'visible' : 'none'); }
   ML.getSource('sheet-boxes').setData({ type: 'FeatureCollection', features: IDX.sheets.filter((m) => on.has(m.id)).map(sheetBox) });
-  ML.setLayoutProperty('sheet-paper', 'visibility', sheetsOn ? 'visible' : 'none');
+  ML.setLayoutProperty('sheet-paper', 'visibility', sheetMode === 'on' ? 'visible' : 'none');
+  for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setPaintProperty(id, 'raster-opacity', sheetMode === 'see' ? 0.5 : 1); }
   // Outline and name: only while the sheet itself isn't showing.
   for (const id of ['sheet-outline', 'sheet-label', 'sheet-hit']) ML.setLayerZoomRange(id, id === 'sheet-label' ? 7.5 : 0, sheetsOn ? SHEET_Z : 24);
 }
@@ -508,7 +544,7 @@ function facePin(q, id, grey, text, dx = 0) {
   const src = grey ? greyFace(id) : im;
   if (src) { const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height, s = Math.max(2 * r / iw, 2 * r / ih);
     ctx.drawImage(src, x - iw * s / 2, y - ih * s / 2, iw * s, ih * s); }
-  if (!src) { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(first(soldier(id).name)[0], x, y); }
+  if (!src) { ctx.fillStyle = C['--paper']; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = C['--ink']; ctx.font = `600 13px ${C['--f-display']}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(isUnit(id) ? (soldier(id).short.match(/\d+/)?.[0] || '•') : first(soldier(id).name)[0], x, y); }
   ctx.restore();
   ctx.restore();
   if (text) label(text, x + r + 7, y + 4, `12px ${C['--f-type']}`, grey ? C['--muted'] : C['--ink'], { tries: [[x + r + 7, y + 4], [x - r - 7 - ctx.measureText(text).width, y + 4], [x - 20, y - r - 6]] });
@@ -588,17 +624,18 @@ function drawNow() {
   }
   // Other soldiers, greyed, at the same date.
   const others = [], greyPins = [];
-  if (showOthers && curT != null && me) for (const o of IDX.soldiers) {
-    if (o.id === SELF) continue;
+  if (curT != null && me) for (const id of ROSTER) {
+    if (id === SELF) continue;
+    const o = soldier(id);
     const at = positionAt(o.id, curT); if (!at) continue;
     const km = Math.round(d3.geoDistance(me, at.p) * 6371);
     others.push({ o, at, km });
-    const q = P(at.p), lab = `${first(o.name)}, ${ageAt(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
+    const q = P(at.p), lab = isUnit(o.id) ? who(o.id) : `${first(o.name)}, ${ageAt(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
     if (q && vis(at.p) && q[0] > 0 && q[0] < W && q[1] > 0 && q[1] < H) greyPins.push({ q, id: o.id, text: lab });
-    else edgePin(me, at.p, o.id, `${first(o.name)}: ${at.name}, ${km.toLocaleString()} km`);
+    else edgePin(me, at.p, o.id, `${who(o.id)}: ${at.name}, ${km.toLocaleString()} km`);
   }
   const meQ = me && P(me);
-  if (meQ && vis(me)) facePin(meQ, SELF, false, `${first(soldier(SELF).name)}, ${ageAt(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
+  if (meQ && vis(me)) facePin(meQ, SELF, false, isUnit(SELF) ? who(SELF) : `${first(soldier(SELF).name)}, ${ageAt(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
   for (const f of greyPins) facePin(f.q, f.id, true, f.text, meQ && Math.hypot(f.q[0] - meQ[0], f.q[1] - meQ[1]) < 40 ? -40 : 0);
   // Current place: name and its written date, then landmark names where there's room.
   if (active >= 0) {
@@ -610,16 +647,15 @@ function drawNow() {
     }
   }
   for (const { l, q } of lmLabels) label(l.name, q[0] + 9, q[1] + 4, `italic 11px ${C['--f-type']}`, C['--ink'], { tries: [[q[0] + 9, q[1] + 4], [q[0] - 9 - l.name.length * 6.2, q[1] + 4], [q[0] - l.name.length * 3, q[1] + 18]] });
-  // Close by: a gold dashed ring around both pins.
-  const ep = curT != null && CLOSE.find((c) => c.soldiers.includes(SELF) && ms(c.from) <= curT && curT <= ms(c.to) + DAY && (c.human_note || c.tier !== 'possibly'));
-  if (ep && me && showOthers) {
-    const other = ep.soldiers.find((x) => x !== SELF), at = positionAt(other, curT);
-    const a = P(me), b = at && P(at.p);
+  // Close by: a gold dashed ring around him and whoever else on the map is within 10 km on this date.
+  const near = others.filter((x) => x.km <= 10).sort((x, y) => x.km - y.km)[0];
+  if (near && me) {
+    const a = P(me), b = P(near.at.p);
     if (a && b) { const cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2 - 24, rr = Math.max(48, Math.hypot(a[0] - b[0], a[1] - b[1]) / 2 + 36);
       if (rr < Math.min(W, H) * 0.45) { ctx.save(); ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = C['--gold']; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); ctx.setLineDash([]);
         ctx.restore(); label('✦ Close by', cx - 36, cy + rr + 16, `600 12px ${C['--f-type']}`, C['--gold'], { tries: [[cx - 36, cy + rr + 16], [cx - 36, cy - rr - 6]] }); } }
   }
-  $('capOther').textContent = others.length ? others.map(({ o, at, km }) => `${first(o.name)}: ${at.name}, ${km < 5 ? 'same place' : 'about ' + km.toLocaleString() + ' km away'}`).join(' · ') : '';
+  $('capOther').textContent = others.length ? others.map(({ o, at, km }) => `${who(o.id)}: ${at.name}, ${km < 5 ? 'same place' : 'about ' + km.toLocaleString() + ' km away'}`).join(' · ') : '';
   updateScale();
 }
 
@@ -642,6 +678,31 @@ function ageAt(id, t) { const b = soldier(id).born; if (!b) return ''; const d =
 function bdayNear(id, t) { const b = soldier(id).born; if (!b || t == null) return false; const y = new Date(t).getUTCFullYear(); return Math.abs(Date.UTC(y, +b.slice(5, 7) - 1, +b.slice(8, 10)) - t) < 4 * DAY; }
 
 // ---------------- moving between stops ----------------
+// The camera for a point in the story: centred on the soldier, at STOP_K, easing out and back in
+// over long journeys so both ends of the move fit on screen at the middle.
+const STOP_K = 260;
+function camera(pr) {
+  if (pr < 0 || !STEPS.length) return { c: [-30, 48], k: 9000 };
+  const i = Math.floor(pr), f = pr - i, a = STEPS[Math.min(i, STEPS.length - 1)], b = STEPS[Math.min(i + 1, STEPS.length - 1)];
+  if (!(f > 0) || a === b) return { c: a.p, k: STOP_K };
+  const km = d3.geoDistance(a.p, b.p) * 6371, bump = Math.max(0, Math.log(km * 1.3 / STOP_K));
+  return { c: d3.geoInterpolate(a.p, b.p)(f), k: STOP_K * Math.exp(Math.sin(Math.PI * f) * bump) };
+}
+// Ease the view toward the camera a little each frame, so stepping or scrolling never jumps.
+let camTarget = null, camTimer = null;
+function follow(target) {
+  camTarget = target;
+  if (anim || userView) return;
+  if (reduce) { view = { c: target.c.slice(), k: target.k }; draw(); return; }
+  if (camTimer) return;
+  camTimer = d3.timer(() => {
+    if (anim || userView || !camTarget) { camTimer.stop(); camTimer = null; return; }
+    const d = d3.geoDistance(view.c, camTarget.c), lk = Math.log(view.k), tk = Math.log(camTarget.k);
+    if (d < 2e-6 && Math.abs(tk - lk) < 0.002) { view = { c: camTarget.c.slice(), k: camTarget.k }; camTimer.stop(); camTimer = null; draw(); settleSoon(); return; }
+    view.c = d3.geoInterpolate(view.c, camTarget.c)(0.2); view.k = Math.exp(lk + (tk - lk) * 0.2);
+    draw();
+  });
+}
 function go(i) {
   if (i === active) return;
   active = i; hidePop(); userView = false; $('mreset').hidden = true;
@@ -651,20 +712,20 @@ function go(i) {
   const from = { c: view.c.slice(), k: view.k, p: prog };
   // After a tab switch the route belongs to a different soldier: show it up to his stop at once, only the view moves.
   if (switching) { from.p = target.p; prog = target.p; switching = false; }
+  // The head goes straight to the new story's place; only the map glides there.
+  prog = target.p; from.p = target.p;
   if (anim) anim.stop();
   if (reduce) { view = { c: target.c, k: target.k }; prog = target.p; draw(); return; }
   const ic = d3.geoInterpolate(from.c, target.c), dist = d3.geoDistance(from.c, target.c);
   const peak = Math.max(from.k, target.k, dist * 6371 * 0.6);
-  const dur = Math.min(2400, 700 + dist * 6371 * 0.35 + Math.abs(Math.log(target.k / from.k)) * 120);
-  const dp = target.p - from.p;
+  const dur = Math.min(1600, 500 + dist * 6371 * 0.25 + Math.abs(Math.log(target.k / from.k)) * 100);
   anim = d3.timer((el) => {
     const t = Math.min(1, el / dur), e = d3.easeCubicInOut(t);
     view.c = ic(e);
     const lk = Math.log(from.k) + (Math.log(target.k) - Math.log(from.k)) * e;
     const bump = Math.sin(Math.PI * e) * Math.max(0, Math.log(peak) - Math.max(Math.log(from.k), Math.log(target.k)));
     view.k = Math.exp(lk + bump);
-    prog = dp >= 0 ? from.p + dp * e : target.p;
-    if (t >= 1) { anim.stop(); anim = null; prog = target.p; }
+    if (t >= 1) { anim.stop(); anim = null; prog = target.p; onScroll(); }
     draw();
   });
 }
@@ -675,40 +736,45 @@ function onScroll() {
   const line = lineY();
   let idx = -1;
   STEPS.forEach((s, i) => { if (s.el.getBoundingClientRect().top < line) idx = i; });
-  if (idx < 0) curT = null;
-  else {
-    const a = STEPS[idx], b = STEPS[idx + 1], ta = a.el.getBoundingClientRect().top;
-    if (!b) curT = a.t; else { const tb = b.el.getBoundingClientRect().top; const f = Math.max(0, Math.min(1, (line - ta) / ((tb - ta) || 1))); curT = a.t + f * (b.t - a.t);
-      // Between two stops the pin travels along the route as the reader scrolls.
-      if (idx === active && !anim && !userView) prog = idx + Math.min(f, 0.999); }
-  }
-  if (window.__pinT != null && curT != null && Math.abs(curT - window.__pinT) < DAY) curT = window.__pinT; else window.__pinT = null;
+  // Above the first story (the header), stay on the first story: never zoom out to the whole globe.
+  idx = Math.max(0, idx);
+  // The date and place come only from the story being read: the last stop reached. Nothing is guessed in between.
+  // After switching soldiers, the date carried over is kept until the reader moves to another stop.
+  if (HELD && HELD.idx === idx) curT = HELD.t; else { HELD = null; curT = idx < 0 ? null : STEPS[idx].t; }
   go(idx);
+  if (!anim && !userView) follow(camera(prog));
   const s = STEPS[idx];
-  $('capDate').textContent = curT != null ? fmtDate(curT) : (STEPS[0] ? 'Before ' + fmtDate(STEPS[0].t) : '');
-  $('capAge').textContent = curT != null ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
-  $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : soldier(SELF).name;
+  $('capDate').textContent = curT == null ? (STEPS[0] ? 'Before ' + STEPS[0].e.date : '') : HELD ? fmtDate(curT) : s.e.date;
+  $('capAge').textContent = curT != null && !isUnit(SELF) ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
+  $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : (SELF ? soldier(SELF).name : '');
   tlMark();
   if (!anim) draw();
 }
+// Jump the story to the stop in force on date t (used when switching soldiers), keeping t as the date shown.
+let HELD = null;
+// Bring story i to the reading line (clicking a story, or opening a soldier).
+function seekStep(i) {
+  const a = STEPS[i]; if (!a) return;
+  HELD = null;
+  scrollTo({ top: Math.round(a.el.getBoundingClientRect().top + scrollY - lineY() + 2), behavior: 'auto' });
+  for (let k = 0; k < 2; k++) { const err = a.el.getBoundingClientRect().top - (lineY() - 2); if (Math.abs(err) < 1) break; scrollBy(0, Math.round(err)); }
+  onScroll();
+}
+// Clicking anywhere on a story (but not on its links, buttons or terms) jumps to it.
+$('story').addEventListener('click', (e) => {
+  if (e.target.closest('a,button,abbr,summary,details,input') || String(getSelection())) return;
+  const el = e.target.closest('.step'); if (!el) return;
+  const i = +el.dataset.i; if (i !== active) seekStep(i);
+});
 function seek(t, smooth) {
-  // Scroll the story so the reading line sits at date t (used by the timeline and when switching soldiers).
-  window.__pinT = t;
   let i = -1; STEPS.forEach((x, k) => { if (x.t <= t + 1e-6) i = k; });
-  if (i < 0) { scrollTo({ top: 0, behavior: smooth && !reduce ? 'smooth' : 'auto' }); return; }
-  const a = STEPS[i], b = STEPS[i + 1], ya = a.el.getBoundingClientRect().top + scrollY;
-  let y = ya;
-  if (b && b.t > a.t) { const yb = b.el.getBoundingClientRect().top + scrollY; y = ya + Math.min(1, (t - a.t) / (b.t - a.t)) * (yb - ya); }
-  const frac = b && b.t > a.t ? Math.min(1, (t - a.t) / (b.t - a.t)) : 0;
-  scrollTo({ top: Math.round(y - lineY() + 1), behavior: smooth && !reduce ? 'smooth' : 'auto' });
+  HELD = { t, idx: i };
+  if (i < 0) { scrollTo({ top: 0, behavior: smooth && !reduce ? 'smooth' : 'auto' }); onScroll(); return; }
+  const a = STEPS[i];
+  scrollTo({ top: Math.round(a.el.getBoundingClientRect().top + scrollY - lineY() + 2), behavior: smooth && !reduce ? 'smooth' : 'auto' });
   if (!smooth || reduce) {
     // Sticky panels can shift the page slightly after a jump; measure again and correct.
-    for (let k = 0; k < 2; k++) {
-      const ta = a.el.getBoundingClientRect().top, tb = b ? b.el.getBoundingClientRect().top : ta;
-      const want = ta + frac * (tb - ta), err = want - (lineY() - 1);
-      if (Math.abs(err) < 1) break;
-      scrollBy(0, Math.round(err));
-    }
+    for (let k = 0; k < 2; k++) { const err = a.el.getBoundingClientRect().top - (lineY() - 2); if (Math.abs(err) < 1) break; scrollBy(0, Math.round(err)); }
   }
   onScroll();
 }
@@ -755,7 +821,7 @@ canvas.addEventListener('pointerup', (e) => {
     hidePop();
     const r = canvas.getBoundingClientRect(), sh = sheetAt(e.clientX - r.left, e.clientY - r.top);
     if (sh && (!sheetsOn || tileZoom() < SHEET_Z)) {
-      if (!sheetsOn) setSheets(true);
+      if (!sheetsOn) setSheets('on');
       const km = (sh.b[2] - sh.b[0]) * 111.32 * Math.cos((sh.b[1] + sh.b[3]) / 2 * Math.PI / 180);
       flyTo([(sh.b[0] + sh.b[2]) / 2, (sh.b[1] + sh.b[3]) / 2], Math.max(MIN_K, Math.min(km * 1.2, 40)));
     }
@@ -784,11 +850,16 @@ canvas.addEventListener('wheel', (e) => {
   zoomBy(Math.exp(Math.max(-0.5, Math.min(0.5, e.deltaY * 0.0015))), e.clientX - r.left, e.clientY - r.top);
 }, { passive: false });
 canvas.addEventListener('dblclick', (e) => { const r = canvas.getBoundingClientRect(); zoomBy(0.5, e.clientX - r.left, e.clientY - r.top); });
-{ const tg = $('sheettoggle'); tg.setAttribute('aria-pressed', String(sheetsOn));
-  tg.addEventListener('click', () => setSheets(!sheetsOn)); }
+{ const tg = $('sheettoggle'); showSheetMode();
+  tg.addEventListener('click', () => setSheets({ on: 'see', see: 'off', off: 'on' }[sheetMode])); }
+function showSheetMode() {
+  const tg = $('sheettoggle'), next = { on: 'see-through', see: 'off', off: 'on' }[sheetMode];
+  tg.dataset.mode = sheetMode; tg.setAttribute('aria-pressed', String(sheetMode !== 'off'));
+  tg.title = `1944–45 army maps: ${{ on: 'on', see: 'see-through', off: 'off' }[sheetMode]}. Click for ${next}.`;
+}
 function setSheets(v) {
-  sheetsOn = v; $('sheettoggle').setAttribute('aria-pressed', String(v)); $('sheettoggle').title = v ? 'Hide the 1944–45 army maps' : 'Show the 1944–45 army maps';
-  try { localStorage.setItem('sp-sheets', v ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
+  sheetMode = v; sheetsOn = v !== 'off'; showSheetMode();
+  try { localStorage.setItem('sp-sheets', v); } catch (e) { /* storage blocked */ }
   sheetKey = ''; draw();
 }
 $('zin').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(0.6); });
