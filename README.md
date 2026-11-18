@@ -51,9 +51,18 @@ A unit location replaces a personal event once that event's date range has ended
 
 Two soldiers are **likely** within 10 km when distance plus both uncertainty radii is 10 km or less, and **possibly** when the circles allow it. Consecutive days merge into one episode. The written note never says the men met; no source in this pipeline records contact.
 
+## Map
+
+- Zoomed out: an orthographic globe drawn with d3 on canvas (Natural Earth outlines from `world-atlas`).
+- Zoomed in (view narrower than about 300 km): a detailed tiled map fades in underneath, using MapLibre GL with
+  [OpenFreeMap](https://openfreemap.org) vector tiles (OpenStreetMap data, no key) and Mapzen terrain tiles on AWS
+  Open Data for hill shading, recoloured to the site's palette. The route, pins and markers stay on the canvas above it.
+- If the tiles can't load (no WebGL, offline, or a host that blocks other sites, like the claude.ai artifact viewer),
+  the globe is used at every zoom.
+
 ## Hosting
 
-Cloudflare Pages: build command `npm run build`, output directory `site`.
+Cloudflare Pages (free): connect this repo, build command `npm run build`, output directory `site`.
 
 ## Current data
 

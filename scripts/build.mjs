@@ -267,7 +267,7 @@ fs.mkdirSync(path.join(OUT, 'soldier'), { recursive: true });
 const VENDOR = path.join(ROOT, 'site', 'data', 'vendor');
 fs.mkdirSync(VENDOR, { recursive: true });
 if (fs.existsSync(path.join(DATA, 'media'))) fs.cpSync(path.join(DATA, 'media'), path.join(OUT, 'media'), { recursive: true });
-for (const f of ['d3/dist/d3.min.js', 'topojson-client/dist/topojson-client.min.js', 'world-atlas/countries-50m.json', 'world-atlas/countries-110m.json']) {
+for (const f of ['d3/dist/d3.min.js', 'topojson-client/dist/topojson-client.min.js', 'world-atlas/countries-50m.json', 'world-atlas/countries-110m.json', 'maplibre-gl/dist/maplibre-gl.js', 'maplibre-gl/dist/maplibre-gl.css']) {
   const from = path.join(ROOT, 'node_modules', f);
   if (fs.existsSync(from)) fs.copyFileSync(from, path.join(VENDOR, path.basename(f)));
   else warn(`node_modules/${f} missing; run npm install`);

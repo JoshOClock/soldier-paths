@@ -7,16 +7,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="data/vendor/maplibre-gl.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <nav class="tabs" role="tablist" aria-label="Soldiers" id="tabs"></nav>
 <div class="wrap" id="wrap">
   <div class="mapbox" id="mapbox">
+    <div id="tiles" aria-hidden="true"></div>
     <canvas id="map" role="img" aria-label="Map following the soldier's route"></canvas>
     <div class="mapzoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
     <button type="button" class="mapreset" id="mreset" hidden>Back to the story</button>
     <div class="pop" id="pop" hidden><button type="button" class="popx" id="popx" aria-label="Close">×</button><b id="popt"></b><p id="popd"></p></div>
+    <div class="attr" id="attr" hidden>© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://openfreemap.org">OpenFreeMap</a> · terrain Mapzen/AWS</div>
     <div class="mapcap" aria-live="polite">
       <div class="where"><span class="maphint">Tap ◆ battles or ✚ memorials · </span><span id="capDate"></span><span class="age" id="capAge"></span><b id="capPlace"></b><span class="srcl" id="capOther"></span></div>
       <div class="scale"><span id="scaleTxt">500 km</span><i id="scaleBar" style="width:60px"></i></div>
@@ -28,6 +31,7 @@
 <div id="gtip" hidden></div>
 <script src="data/vendor/d3.min.js"></script>
 <script src="data/vendor/topojson-client.min.js"></script>
+<script src="data/vendor/maplibre-gl.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

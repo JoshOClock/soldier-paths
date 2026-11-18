@@ -319,6 +319,75 @@ function label(text, x, y, font, fill, opts = {}) {
   return false;
 }
 let switching = false;
+
+// ---------------- detailed tiled map (zoomed in) ----------------
+// OpenFreeMap vector tiles (OpenStreetMap data) and Mapzen terrain on AWS, recoloured to the paper palette.
+// Falls back to the globe alone if tiles can't load (no WebGL, offline, or a host that blocks other sites).
+const TILE_K = 300;            // view width in km below which the tiled map is fully shown
+const TILE_STYLE = window.TILE_STYLE_OVERRIDE || 'https://tiles.openfreemap.org/styles/liberty';
+const TERRAIN = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+let ML = null, mlState = 'off', tileAlpha = 0;   // off | loading | ready | failed
+const tilesReady = () => mlState === 'ready';
+function initTiles() {
+  if (mlState !== 'off' || typeof maplibregl === 'undefined') return;
+  mlState = 'loading';
+  try {
+    ML = new maplibregl.Map({ container: 'tiles', style: TILE_STYLE, interactive: false, attributionControl: false, fadeDuration: 0, center: view.c, zoom: 6 });
+  } catch (e) { mlState = 'failed'; return; }
+  const fail = setTimeout(() => { if (mlState === 'loading') { mlState = 'failed'; } }, 15000);
+  ML.on('error', (e) => { if (mlState === 'loading') { clearTimeout(fail); mlState = 'failed'; draw(); } });
+  ML.on('load', () => { clearTimeout(fail); restyleTiles(); mlState = 'ready'; bgKey = ''; draw(); });
+}
+function restyleTiles() {
+  const dark = C['--paper'] && C['--paper'].toLowerCase() !== '#eceee8';
+  const firstSymbol = ML.getStyle().layers.find((l) => l.type === 'symbol')?.id;
+  for (const l of ML.getStyle().layers) {
+    const id = l.id;
+    try {
+      if (l.type === 'background') ML.setPaintProperty(id, 'background-color', C['--land']);
+      else if (l.type === 'fill-extrusion' || /building|poi|aeroway|housenumber|highway-shield|road_shield|oneway/.test(id)) ML.setLayoutProperty(id, 'visibility', 'none');
+      else if (l.type === 'fill') {
+        const water = /water/.test(id), green = /park|wood|forest|grass|landcover|landuse/.test(id);
+        ML.setPaintProperty(id, 'fill-color', water ? C['--sea'] : green ? (dark ? '#30352a' : '#dcd5bb') : C['--land']);
+        ML.setPaintProperty(id, 'fill-opacity', water ? 1 : green ? 0.7 : 0.35);
+        if (l.paint && 'fill-outline-color' in l.paint) ML.setPaintProperty(id, 'fill-outline-color', 'rgba(0,0,0,0)');
+      } else if (l.type === 'line') {
+        const water = /water|river|stream|canal/.test(id), rail = /rail|transit/.test(id), boundary = /boundary|admin/.test(id);
+        ML.setPaintProperty(id, 'line-color', water ? C['--sea'] : boundary ? C['--border'] : rail ? C['--muted'] : C['--border']);
+        if (/casing/.test(id)) ML.setLayoutProperty(id, 'visibility', 'none');
+      } else if (l.type === 'symbol') {
+        if (l.layout && l.layout['icon-image'] && !/place|label_city|label_town|label_village/.test(id)) ML.setLayoutProperty(id, 'visibility', 'none');
+        if (l.layout && 'text-field' in l.layout) {
+          ML.setPaintProperty(id, 'text-color', /water/.test(id) ? C['--muted'] : C['--ink']);
+          ML.setPaintProperty(id, 'text-halo-color', C['--land']);
+          ML.setPaintProperty(id, 'text-halo-width', 1.4);
+        }
+      }
+    } catch (e) { /* a layer without that property: leave it */ }
+  }
+  if (!ML.getSource('terrain')) {
+    ML.addSource('terrain', { type: 'raster-dem', tiles: [TERRAIN], tileSize: 256, maxzoom: 13, encoding: 'terrarium' });
+    ML.addLayer({ id: 'hills', type: 'hillshade', source: 'terrain', paint: { 'hillshade-shadow-color': dark ? '#000000' : '#59625b', 'hillshade-highlight-color': dark ? '#3a3f35' : '#f4efe0', 'hillshade-exaggeration': 0.35 } }, firstSymbol);
+  }
+}
+function tileZoom() {
+  // Match the tiled map's scale to the globe's at the centre of the view.
+  const pxPerKm = scaleFor(view.k) / 6371, lat = view.c[1] * Math.PI / 180;
+  return Math.log2(40075016.686 * Math.cos(lat) * pxPerKm / (512 * 1000));
+}
+function syncTiles() {
+  const el = document.getElementById('tiles');
+  if (tileAlpha <= 0) { if (el.style.visibility !== 'hidden') el.style.visibility = 'hidden'; $('attr').hidden = true; if (view.k < TILE_K * 3) initTiles(); return; }
+  el.style.visibility = 'visible'; $('attr').hidden = false;
+  ML.jumpTo({ center: view.c, zoom: tileZoom() });
+}
+// Overlay projection: the tiled map's own once it's mostly showing, otherwise the globe.
+const useTiles = () => tilesReady() && tileAlpha >= 0.5;
+function P(p) { if (useTiles()) { const q = ML.project(p); return [q.x, q.y]; } return proj(p); }
+function vis(p) { return useTiles() ? true : visible(p); }
+const tpath = d3.geoPath(d3.geoTransform({ point(x, y) { const q = ML.project([x, y]); this.stream.point(q.x, q.y); } }), ctx);
+function opath(g) { return useTiles() ? tpath(g) : path(g); }
+function unproj(px, py) { if (useTiles()) { const l = ML.unproject([px, py]); return [l.lng, l.lat]; } return proj.invert([px, py]); }
 let W = 0, H = 0, DPR = 1, view = { c: [-60, 50], k: 4800 }, prog = -1, anim = null, HITS = [], userView = false;
 const C = {};
 function readColors() { ['--sea', '--land', '--border', '--grat', '--route', '--route-soft', '--ink', '--paper', '--muted', '--gold', '--f-type', '--f-display'].forEach((k) => { C[k] = css(k); }); }
@@ -362,7 +431,7 @@ function facePin(q, id, grey, text, dx = 0) {
 
 function edgePin(from, to, id, label) {
   // The other soldier is off screen: a greyed pin on the edge, pointing his way.
-  const a = proj(from); if (!a) return;
+  const a = P(from); if (!a) return;
   const rad = Math.PI / 180, f1 = from[1] * rad, f2 = to[1] * rad, dl = (to[0] - from[0]) * rad;
   const th = Math.atan2(Math.sin(dl) * Math.cos(f2), Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl));
   const ux = Math.sin(th), uy = -Math.cos(th), m = 44, cx0 = W / 2, cy0 = H / 2;
@@ -397,21 +466,25 @@ function drawNow() {
     b.beginPath(); bgpath(g.land); b.fillStyle = C['--land']; b.fill(); b.strokeStyle = C['--border']; b.lineWidth = 0.6; b.stroke();
     b.beginPath(); bgpath(g.borders); b.strokeStyle = C['--border']; b.lineWidth = 0.8; b.setLineDash([3, 3]); b.stroke(); b.setLineDash([]);
   }
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(bg, 0, 0);
+  // Zoomed in, the detailed tiled map fades in underneath; the globe background fades out over it.
+  tileAlpha = tilesReady() ? Math.max(0, Math.min(1, (TILE_K + 150 - view.k) / 150)) : 0;
+  syncTiles();
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (tileAlpha < 1) { ctx.globalAlpha = 1 - tileAlpha; ctx.drawImage(bg, 0, 0); ctx.globalAlpha = 1; }
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); HITS = []; PLACED = [];
   if (!STEPS.length) return;
   // Route: whole path faint and dashed; travelled part solid red.
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.beginPath(); path({ type: 'LineString', coordinates: STEPS.map((s) => s.p) }); ctx.strokeStyle = C['--route-soft']; ctx.lineWidth = 1.5; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); opath({ type: 'LineString', coordinates: STEPS.map((s) => s.p) }); ctx.strokeStyle = C['--route-soft']; ctx.lineWidth = 1.5; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
   const me = selfPos();
   if (prog >= 0) {
     const whole = Math.floor(prog), coords = STEPS.slice(0, whole + 1).map((s) => s.p);
     if (me) coords.push(me);
-    ctx.beginPath(); path({ type: 'LineString', coordinates: coords }); ctx.strokeStyle = C['--route']; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.beginPath(); opath({ type: 'LineString', coordinates: coords }); ctx.strokeStyle = C['--route']; ctx.lineWidth = 2.6; ctx.stroke();
     const seen = new Set();
     for (let i = 0; i <= Math.min(whole, STEPS.length - 1); i++) {
       const s = STEPS[i]; if (seen.has(s.e.place_id) && i !== whole) continue; seen.add(s.e.place_id);
-      const q = proj(s.p); if (!q || !visible(s.p)) continue;
+      const q = P(s.p); if (!q || !vis(s.p)) continue;
       ctx.beginPath(); ctx.arc(q[0], q[1], i === whole ? 5 : 3, 0, 7); ctx.fillStyle = i === whole ? C['--route'] : C['--paper']; ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = C['--route']; ctx.stroke();
     }
   }
@@ -419,7 +492,7 @@ function drawNow() {
   const lmLabels = [];
   for (const l of IDX.landmarks || []) {
     if (view.k > l.maxKm) continue;
-    const p = [l.lon, l.lat], q = proj(p); if (!q || !visible(p) || q[0] < 0 || q[0] > W || q[1] < 0 || q[1] > H) continue;
+    const p = [l.lon, l.lat], q = P(p); if (!q || !vis(p) || q[0] < 0 || q[0] > W || q[1] < 0 || q[1] > H) continue;
     HITS.push({ x: q[0], y: q[1], l });
     ctx.save(); ctx.translate(q[0], q[1]);
     if (l.kind === 'battle') { ctx.rotate(Math.PI / 4); ctx.fillStyle = C['--paper']; ctx.strokeStyle = C['--ink']; ctx.lineWidth = 1.4; ctx.fillRect(-4, -4, 8, 8); ctx.strokeRect(-4, -4, 8, 8); }
@@ -435,17 +508,17 @@ function drawNow() {
     const at = positionAt(o.id, curT); if (!at) continue;
     const km = Math.round(d3.geoDistance(me, at.p) * 6371);
     others.push({ o, at, km });
-    const q = proj(at.p), lab = `${first(o.name)}, ${ageAt(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
-    if (q && visible(at.p) && q[0] > 0 && q[0] < W && q[1] > 0 && q[1] < H) greyPins.push({ q, id: o.id, text: lab });
+    const q = P(at.p), lab = `${first(o.name)}, ${ageAt(o.id, curT)}${bdayNear(o.id, curT) ? ' 🎂' : ''}`;
+    if (q && vis(at.p) && q[0] > 0 && q[0] < W && q[1] > 0 && q[1] < H) greyPins.push({ q, id: o.id, text: lab });
     else edgePin(me, at.p, o.id, `${first(o.name)}: ${at.name}, ${km.toLocaleString()} km`);
   }
-  const meQ = me && proj(me);
-  if (meQ && visible(me)) facePin(meQ, SELF, false, `${first(soldier(SELF).name)}, ${ageAt(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
+  const meQ = me && P(me);
+  if (meQ && vis(me)) facePin(meQ, SELF, false, `${first(soldier(SELF).name)}, ${ageAt(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
   for (const f of greyPins) facePin(f.q, f.id, true, f.text, meQ && Math.hypot(f.q[0] - meQ[0], f.q[1] - meQ[1]) < 40 ? -40 : 0);
   // Current place: name and its written date, then landmark names where there's room.
   if (active >= 0) {
-    const s = STEPS[active], q = proj(s.p);
-    if (q && visible(s.p)) {
+    const s = STEPS[active], q = P(s.p);
+    if (q && vis(s.p)) {
       const t = IDX.places[s.e.place_id].name;
       const placed = label(t, q[0] + 10, q[1] + 20, `15px ${C['--f-type']}`, C['--route'], { tries: [[q[0] + 10, q[1] + 20], [q[0] - 10 - t.length * 8, q[1] + 20], [q[0] + 10, q[1] - 40]] });
       if (placed) { const b = PLACED[PLACED.length - 1]; label(s.e.date, b[0] + 2, b[1] + b[3] + 12, `12px ${C['--f-type']}`, C['--muted']); }
@@ -456,7 +529,7 @@ function drawNow() {
   const ep = curT != null && CLOSE.find((c) => c.soldiers.includes(SELF) && ms(c.from) <= curT && curT <= ms(c.to) + DAY && (c.human_note || c.tier !== 'possibly'));
   if (ep && me && showOthers) {
     const other = ep.soldiers.find((x) => x !== SELF), at = positionAt(other, curT);
-    const a = proj(me), b = at && proj(at.p);
+    const a = P(me), b = at && P(at.p);
     if (a && b) { const cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2 - 24, rr = Math.max(48, Math.hypot(a[0] - b[0], a[1] - b[1]) / 2 + 36);
       if (rr < Math.min(W, H) * 0.45) { ctx.save(); ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = C['--gold']; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); ctx.setLineDash([]);
         ctx.restore(); label('✦ Close by', cx - 36, cy + rr + 16, `600 12px ${C['--f-type']}`, C['--gold'], { tries: [[cx - 36, cy + rr + 16], [cx - 36, cy - rr - 6]] }); } }
@@ -473,7 +546,9 @@ function updateScale() {
 }
 function resize() {
   const r = box.getBoundingClientRect(); W = r.width; H = r.height; DPR = Math.min(2, devicePixelRatio || 1);
-  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR); draw();
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  if (ML) ML.resize();
+  draw();
 }
 
 // Ages and birthdays, from the birth date.
@@ -584,6 +659,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (!drag.moved) return;
   const deg = 180 / Math.PI / proj.scale();
   view.c = [drag.c[0] - dx * deg / Math.cos(view.c[1] * Math.PI / 180), Math.max(-80, Math.min(80, drag.c[1] + dy * deg))];
+  // (scales match at the centre, so the same pan works for the tiled map)
   userView = true; $('mreset').hidden = false; if (anim) { anim.stop(); anim = null; } draw();
 });
 canvas.addEventListener('pointerup', (e) => {
@@ -597,11 +673,12 @@ canvas.addEventListener('pointerup', (e) => {
 // Zoom by factor f, keeping the point under (px, py) fixed when given.
 function zoomBy(f, px, py) {
   if (anim) { anim.stop(); anim = null; }
-  const before = px != null ? proj.invert([px, py]) : null;
+  const before = px != null ? unproj(px, py) : null;
   view.k = Math.max(20, Math.min(9000, view.k * f));
   if (before) {
     proj.scale(scaleFor(view.k));
-    const after = proj.invert([px, py]);
+    if (useTiles()) ML.jumpTo({ center: view.c, zoom: tileZoom() });
+    const after = unproj(px, py);
     if (after && isFinite(after[0])) view.c = [view.c[0] + before[0] - after[0], Math.max(-80, Math.min(80, view.c[1] + before[1] - after[1]))];
   }
   userView = true; $('mreset').hidden = false; draw();
@@ -617,7 +694,7 @@ $('zout').addEventListener('click', () => { lastWheel = performance.now(); zoomB
 $('mreset').addEventListener('click', () => { const i = active; active = -3; go(i); });
 
 new ResizeObserver(() => { resize(); onScroll(); }).observe(box);
-const recolor = () => { readColors(); bgKey = ''; tlDraw(); draw(); };
+const recolor = () => { readColors(); bgKey = ''; if (tilesReady()) restyleTiles(); tlDraw(); draw(); };
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', recolor);
 readColors();
 document.fonts && document.fonts.ready.then(() => draw());
