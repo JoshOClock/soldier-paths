@@ -13,6 +13,7 @@ official history, on a branch, for Josh to review. It never touches `main`.
    add a row to `data/unit_locations.csv`:
    - `location_id`: `ul-<unit_id>-<yyyymmdd>-<n>`
    - `date_from` / `date_to`: as precise as the text allows (`19 Jul 1944`, `Jul 1944`, `19 Jul 1944 to 21 Jul 1944`)
+     For a single day, set `date_to` the same as `date_from`: an empty `date_to` means "from then on".
    - `place_id`: an existing place from `data/places.csv`, or a new one added there with lon/lat.
      Only use coordinates you are confident of (a named village or town). If the text names an area
      ("south of Caen"), use the nearest named place and widen `precision_km` (5 to 15).
