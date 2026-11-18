@@ -174,8 +174,8 @@ Rules:
    all rights reserved or without a clear reuse statement.
 4. `caption`: one or two sentences in your own words from the record (no long quotes). `date` as precise as the
    record allows (`19 Jul 1944`, `Jul 1944`, `late Jul 1944`). `note`: photographer or unit, and anything uncertain.
-5. Prefer photos that match a unit location already on the site (same place, within a few days): those show inside
-   the unit's and its soldiers' stories as well as on the map.
+5. Prefer photos that match a unit location already on the site (same place, within a few days): they show as camera
+   icons on the map near the stories they belong to. Archive photos never go inside a soldier's story.
 6. `lon`/`lat` for the named place; `precision_km` 1 for a town, 5 to 10 for "near" or "south of".
 7. `photo_id`: `iwm-b-8910`, `lac-3563575`, and so on. Never add a photo that's already in the file.
 8. Run `npm run build` again to check the rows.
