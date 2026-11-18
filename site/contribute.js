@@ -8,7 +8,7 @@ const REPO = 'JoshOClock/soldier-paths';
 // Where emailed submissions go. Empty hides the email button.
 const SUBMIT_EMAIL = '';
 // Upload-only link (a Dropbox file request). Empty hides the upload button.
-const UPLOAD_URL = '';
+const UPLOAD_URL = 'https://www.dropbox.com/request/e7veg4p4xmmlbkj88zdp';
 let current = null;
 
 fetch('submit/prompt.md').then((r) => r.text()).then((t) => { $('prompt').textContent = t; });
