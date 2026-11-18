@@ -96,29 +96,6 @@ oldest war date first:
 
 Never edit or replace a note someone else wrote.
 
-## Chapter queue
-
-Base URL: `https://ibiblio.org/hyperwar/UN/Canada/CA/Victory/`
-
-| N | File | Covers |
-|---|------|--------|
-| 5 | Victory-5.html | D-Day, 6 June 1944 |
-| 6 | Victory-6.html | Bridgehead, 7 to 30 June |
-| 7 | Victory-7.html | Caen and Bourguébus, 1 to 23 July |
-| 8 | Victory-8.html | Breakout begins, 24 to 31 July |
-| 9 | Victory-9.html | Falaise road, 1 to 12 August |
-| 10 | Victory-10.html | Falaise, 12 to 23 August |
-| 12 | Victory-12.html | Seine, 23 to 30 August |
-| 14 | Victory-14.html | Coastal belt and ports, September |
-| 15 | Victory-15.html | Scheldt I |
-| 16 | Victory-16.html | Scheldt II |
-| 17 | Victory-17.html | Winter on the Maas |
-| 18 | Victory-18.html | Rhineland I, Veritable |
-| 19 | Victory-19.html | Rhineland II, Blockbuster |
-| 20 | Victory-20.html | Rhine crossing, advance to the North Sea |
-| 21 | Victory-21.html | Western Netherlands |
-| 22 | Victory-22.html | German surrender |
-
 ## Later sources (not yet in the job)
 
 - War diaries on Héritage (images only, no text). Needs a run on a computer with a browser, and the
