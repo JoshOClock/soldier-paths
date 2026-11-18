@@ -239,7 +239,7 @@ function renderStory() {
     ${isUnit(SELF) ? `<p class="lede">Where this unit was, stop by stop, from the official history and war diaries. Each stop quotes its source. These are drafts read by AI and not yet checked by a person.</p>`
     : `<p class="lede">${esc(doc.soldier.rank)}. Born ${esc(born)}${bp ? ', ' + esc(bp) : ''}. Every stop below quotes its source. The map puts him only where a record does: his own papers, or his unit's when his own go quiet. A "close by" note never means the men met unless a record says so.</p>`}
     ${(doc.media || []).filter((m) => m.kind === 'portrait').map(figure).join('')}
-    <p class="hint">Scroll to follow him. The timeline beside the map is to scale.</p>
+    <p class="hint">Scroll to follow ${isUnit(SELF) ? "it" : "him"}. The timeline beside the map is to scale.</p>
   </header>`;
   STEPS = [];
   // Each close-by note appears once, on the stop it was written about (or the first stop it overlaps).
