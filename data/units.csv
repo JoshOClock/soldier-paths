@@ -8,3 +8,6 @@ ii-cdn-corps,II Canadian Corps,2 Cdn Corps,corps,first-cdn-army,WW2,,
 23-bty-j-trp,"J Troop, 23rd Battery",J Tp,troop,23-atk-bty,WW2,,
 2-cdn-armd-bde,2nd Canadian Armoured Brigade,2 Cdn Armd Bde,brigade,first-cdn-army,WW2,,Attached to different divisions over time; record attachments in unit_parents.csv
 17-lt-fd-amb,"17th (Light) Field Ambulance, RCAMC",17 Lt Fd Amb,field_ambulance,2-cdn-armd-bde,WW2,,Medical unit of the 2nd Canadian Armoured Brigade; war diary requested
+6-cdn-armd-regt,6th Armoured Regiment (1st Hussars),6 Cdn Armd Regt,regiment,2-cdn-armd-bde,WW2,,
+10-cdn-armd-regt,10th Armoured Regiment (The Fort Garry Horse),10 Cdn Armd Regt,regiment,2-cdn-armd-bde,WW2,,
+27-cdn-armd-regt,27th Armoured Regiment (The Sherbrooke Fusiliers Regiment),27 Cdn Armd Regt,regiment,2-cdn-armd-bde,WW2,,
