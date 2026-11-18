@@ -769,8 +769,10 @@ function drawNow() {
     else edgePin(me, at.p, o.id, `${who(o.id)}: ${at.name}, ${km.toLocaleString()} km`);
   }
   const meQ = me && P(me);
+  // Grey pins first so the one being followed sits on top; a close one steps aside (further for a unit's wider box).
+  for (const f of greyPins) { const gap = isUnit(f.id) || isUnit(SELF) ? 56 : 40;
+    facePin(f.q, f.id, true, f.text, meQ && Math.hypot(f.q[0] - meQ[0], f.q[1] - meQ[1]) < gap ? -gap : 0); }
   if (meQ && vis(me)) facePin(meQ, SELF, false, isUnit(SELF) ? who(SELF) : `${first(soldier(SELF).name)}, ${ageLabel(SELF, curT ?? STEPS[0].t)}${bdayNear(SELF, curT ?? 0) ? ' 🎂' : ''}`);
-  for (const f of greyPins) facePin(f.q, f.id, true, f.text, meQ && Math.hypot(f.q[0] - meQ[0], f.q[1] - meQ[1]) < 40 ? -40 : 0);
   // Current place: name and its written date, then landmark names where there's room.
   if (active >= 0) {
     const s = STEPS[active], q = P(s.p);
