@@ -1,5 +1,5 @@
 {
-  "next_chapter": 9,
+  "next_chapter": 10,
   "runs": [
     {
       "date": "2026-11-18",
@@ -20,6 +20,11 @@
       "date": "2026-11-18",
       "chapter": 8,
       "rows_added": 20
+    },
+    {
+      "date": "2026-11-18",
+      "chapter": 9,
+      "rows_added": 39
     }
   ]
 }
