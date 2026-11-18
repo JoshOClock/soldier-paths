@@ -236,6 +236,9 @@ function renderStory() {
       const primary = e.kind === 'unit' ? e.quotes : e.quotes.filter((q) => !SECONDARY.has(IDX.sources[q.source_id]?.kind));
       const secondary = e.kind === 'unit' ? [] : e.quotes.filter((q) => SECONDARY.has(IDX.sources[q.source_id]?.kind));
       const cross = (crossAt.get(e.event_id) || []);
+      const prevSt = STEPS[i - 1];
+      if (prevSt) { const gap = st.t - prevSt.t, pad = Math.min(70, Math.round(10 * Math.log2(1 + gap / DAY / 7)));
+        html += `<div class="gap" style="margin-top:${pad}px"><span>${esc(later(gap))}</span></div>`; }
       html += `<article class="step" data-i="${i}">
         <div class="date">${esc(e.date)}</div>
         <h3>${esc(e.detail)}</h3>
@@ -265,6 +268,15 @@ function renderStory() {
   bindGloss();
 }
 
+// How far apart two dates are, in words: "same day", "4 days later", "3 weeks later", "2 years later".
+function later(dt) {
+  const d = Math.round(dt / DAY);
+  if (d <= 0) return 'same day';
+  if (d < 14) return `${d} day${d > 1 ? 's' : ''} later`;
+  if (d < 63) return `${Math.round(d / 7)} weeks later`;
+  if (d < 700) return `${Math.round(d / 30.4)} months later`;
+  const y = Math.round(d / 365.25); return `${y} year${y > 1 ? 's' : ''} later`;
+}
 // "Meanwhile": what the others on the map did between this stop and the next one.
 function meanwhile(from, to) {
   const rows = [];
@@ -277,9 +289,10 @@ function meanwhile(from, to) {
     if (hits.length > 2) rows.push({ id, more: hits.length - 2, x: hits[2] });
   }
   if (!rows.length) return '';
+  rows.sort((a, b) => a.x.t - b.x.t);
   return `<aside class="meanwhile"><div class="mwh">Meanwhile</div>${rows.map(({ id, x, more }) => more
     ? `<button type="button" class="mw more" data-other="${id}" data-t="${x.t}">+ ${more} more for ${esc(who(id))}</button>`
-    : `<button type="button" class="mw" data-other="${id}" data-t="${x.t}">${FACES[id] ? `<img src="${esc(soldier(id).face)}" alt="" width="24" height="24">` : `<span class="mwi">${esc(who(id).match(/\d+/)?.[0] || who(id)[0])}</span>`}<span><b>${esc(who(id))}</b> · ${esc(x.e.date)}<br>${esc(x.e.detail)} <i>${esc(place(x.e.place_id).name)}</i></span></button>`).join('')}</aside>`;
+    : `<button type="button" class="mw" data-other="${id}" data-t="${x.t}">${FACES[id] ? `<img src="${esc(soldier(id).face)}" alt="" width="24" height="24">` : `<span class="mwi">${esc(who(id).match(/\d+/)?.[0] || who(id)[0])}</span>`}<span><b>${esc(who(id))}</b> · ${esc(x.e.date)} <em class="rel">${esc(later(x.t - from))}</em><br>${esc(x.e.detail)} <i>${esc(place(x.e.place_id).name)}</i></span></button>`).join('')}</aside>`;
 }
 function crossHtml(c) {
   const other = c.soldiers.find((x) => x !== SELF), on = who(other);

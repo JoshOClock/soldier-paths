@@ -82,10 +82,17 @@ Next: run the war diary pipeline on the 2nd Anti-Tank Regiment diary (Héritage 
 
 `site/contribute.html` gives families a prompt (`site/submit/prompt.md`) to paste into their own AI along with their documents. The AI replies with one JSON object (format `soldier-paths/1`). The page checks it with `site/submit/check.mjs`, previews the route, and lets them download the file or paste it into a GitHub issue (`.github/ISSUE_TEMPLATE/soldier.yml`).
 
-To bring a submission in:
+Families send their file and photos through the upload button on that page. It opens a Dropbox file request
+("Soldier Paths submissions", https://www.dropbox.com/request/e7veg4p4xmmlbkj88zdp), so uploads land in the
+`File requests/Soldier Paths submissions` folder in Josh's Dropbox, which only he can see. Dropbox emails Josh
+when something arrives. Each submission has a code (SP-XXXXX) in its file name and in the uploader's note, which ties
+the file to its photos. To change the upload link, edit `UPLOAD_URL` in `site/contribute.js`; `SUBMIT_EMAIL` there
+turns on the email button.
+
+To bring a submission in (download its file and photos from Dropbox into one folder first):
 
     node scripts/import_submission.mjs path/to/name.soldier.json --dry-run   # see what it would add
-    node scripts/import_submission.mjs path/to/name.soldier.json            # add as private
+    node scripts/import_submission.mjs path/to/name.soldier.json --photos path/to/folder   # add as private, with photos
     npm run build
 
 Imported soldiers are private until you change `privacy` to `public` in `data/soldiers.csv` (or import with `--public`). Facts the family marked as their own memory come in as `family`; everything else is `ai_draft`, because the family's AI wrote it. Units the site doesn't know yet are added to `data/units.csv` with no parent, for you to place in the hierarchy.
