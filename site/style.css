@@ -258,3 +258,25 @@ figure.clip img{background:#fff}
 .pop img{display:block;width:100%;height:auto;margin:6px 0 8px;border:1px solid var(--border);background:#ddd}
 .pop .popc{font-family:var(--f-type);font-size:11.5px;color:var(--muted);margin-top:6px}
 .pop .popc a{color:var(--muted)}
+/* Where you are: the story being read stands out; the rest steps back. A bar at the top says who, when and where. */
+.step{transition:opacity .25s,background-color .25s,border-color .3s}
+.step:not(.on){opacity:.5}
+.step:not(.on):hover{opacity:.85}
+.step.on{background:var(--card);border-left-width:4px;padding-left:20px;margin-left:-2px;box-shadow:0 1px 0 var(--rule)}
+.step.on .date{display:inline-block;background:var(--route);color:var(--paper);padding:1px 8px;border-radius:2px}
+.nowbar{position:sticky;top:var(--tabh,46px);z-index:4;display:flex;align-items:center;gap:10px;background:var(--paper);border-bottom:1px solid var(--rule);padding:8px 0;font-family:var(--f-type);font-size:13px;color:var(--ink);min-height:26px}
+.nowbar:empty{display:none}
+.nowbar img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:2px solid var(--route)}
+.nowbar b{font-weight:400;color:var(--route)}
+.nowbar .nd{font-weight:700}
+.nowbar .nn{margin-left:auto;color:var(--muted);font-size:12px}
+@media (max-width:899px){.nowbar{display:none}}
+.meanwhile{margin:10px 0 0 22px;padding:8px 10px;border-left:2px dashed var(--border);opacity:.9}
+.meanwhile .mwh{font-family:var(--f-type);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.meanwhile .mw{display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:5px 2px;cursor:pointer;color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.35}
+.meanwhile .mw:hover b{text-decoration:underline}
+.meanwhile .mw img,.meanwhile .mwi{width:24px;height:24px;border-radius:50%;object-fit:cover;filter:grayscale(1);flex:none;margin-top:2px}
+.meanwhile .mwi{display:inline-flex;align-items:center;justify-content:center;background:var(--rule);font-family:var(--f-display);font-size:12px}
+.meanwhile .mw b{font-family:var(--f-type);font-weight:400;font-size:12.5px;color:var(--muted)}
+.meanwhile .mw i{color:var(--muted)}
+.meanwhile .mw.more{font-family:var(--f-type);font-size:12px;color:var(--muted);padding-left:32px}

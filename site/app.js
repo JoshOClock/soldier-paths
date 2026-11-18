@@ -195,7 +195,7 @@ function renderStory() {
   const s = soldier(SELF), doc = DOCS[SELF], chapters = chaptersFor(SELF);
   const born = s.born ? fmtDate(ms(s.born)) : '';
   const bp = doc.soldier.birth_place_id ? place(doc.soldier.birth_place_id)?.name : '';
-  let html = `<header class="hero">
+  let html = `<div class="nowbar" id="nowbar" aria-live="polite"></div><header class="hero">
     ${s.face ? `<img class="faceimg" src="${s.face}" width="84" height="84" alt="">` : ''}
     <div class="eyebrow">Soldier Paths · Second World War${doc.soldier.service_number ? ' · ' + esc(doc.soldier.service_number) : ''}</div>
     <h1>${esc(s.name)}</h1>
@@ -242,7 +242,7 @@ function renderStory() {
         ${!e.quotes.length ? `<p class="note">${esc(e.note || 'No quoted source yet.')}</p>` : ''}
         ${secondary.length ? `<details class="more"><summary>More</summary>${secondary.map(quoteBlock).join('')}</details>` : ''}
         <p class="conf"><span class="${cc}">${esc(cl)}</span>${e.status === 'ai_draft' ? '<span class="c-ai">AI reading, not yet checked</span>' : ''}</p>
-      </article>`;
+      </article>${meanwhile(st.t, next ? next.t : Infinity)}`;
       STEPS.push({ t: st.t, p: st.p, e, k: 0 });
     });
     html += `</section>`;
@@ -258,9 +258,26 @@ function renderStory() {
   // Every stop is shown at the same scale, so zooming is predictable; long moves zoom out on the way (camera()).
   STEPS.forEach((s) => { s.k = STOP_K; });
   document.querySelectorAll('.crossgo').forEach((b) => b.addEventListener('click', () => select(b.dataset.other, curT)));
+  document.querySelectorAll('.meanwhile .mw').forEach((b) => b.addEventListener('click', () => select(b.dataset.other, +b.dataset.t)));
   bindGloss();
 }
 
+// "Meanwhile": what the others on the map did between this stop and the next one.
+function meanwhile(from, to) {
+  const rows = [];
+  for (const id of ROSTER) {
+    if (id === SELF || !DOCS[id]) continue;
+    const hits = stopsOf(id).filter((x) => x.t >= from && x.t < to);
+    if (!hits.length) continue;
+    const shown = hits.slice(0, 2);
+    rows.push(...shown.map((x) => ({ id, x })));
+    if (hits.length > 2) rows.push({ id, more: hits.length - 2, x: hits[2] });
+  }
+  if (!rows.length) return '';
+  return `<aside class="meanwhile"><div class="mwh">Meanwhile</div>${rows.map(({ id, x, more }) => more
+    ? `<button type="button" class="mw more" data-other="${id}" data-t="${x.t}">+ ${more} more for ${esc(who(id))}</button>`
+    : `<button type="button" class="mw" data-other="${id}" data-t="${x.t}">${FACES[id] ? `<img src="${esc(soldier(id).face)}" alt="" width="24" height="24">` : `<span class="mwi">${esc(who(id).match(/\d+/)?.[0] || who(id)[0])}</span>`}<span><b>${esc(who(id))}</b> · ${esc(x.e.date)}<br>${esc(x.e.detail)} <i>${esc(place(x.e.place_id).name)}</i></span></button>`).join('')}</aside>`;
+}
 function crossHtml(c) {
   const other = c.soldiers.find((x) => x !== SELF), on = who(other);
   const title = c.human_note ? c.human_note.title : (c.tier === 'likely' ? 'within about 10 km' : 'possibly within 10 km');
@@ -772,6 +789,8 @@ function onScroll() {
   $('capDate').textContent = curT == null ? (STEPS[0] ? 'Before ' + STEPS[0].e.date : '') : HELD ? fmtDate(curT) : s.e.date;
   $('capAge').textContent = curT != null && !isUnit(SELF) ? ` · age ${ageAt(SELF, curT)}${bdayNear(SELF, curT) ? ' 🎂' : ''}` : '';
   $('capPlace').textContent = s ? IDX.places[s.e.place_id].name : (SELF ? soldier(SELF).name : '');
+  const nb = $('nowbar');
+  if (nb && s) nb.innerHTML = `${soldier(SELF).face ? `<img src="${esc(soldier(SELF).face)}" alt="" width="26" height="26">` : ''}<span><b>${esc(who(SELF))}</b>${isUnit(SELF) ? '' : `, ${ageAt(SELF, curT)}`} · <span class="nd">${esc(HELD ? fmtDate(curT) : s.e.date)}</span> · ${esc(IDX.places[s.e.place_id].name)}</span><span class="nn">${idx + 1} of ${STEPS.length}</span>`;
   tlMark();
   if (!anim) draw();
 }
