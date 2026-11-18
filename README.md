@@ -9,6 +9,8 @@ Starts with Clayton Brown (23rd Battery, 2nd Anti-Tank Regiment, 2nd Canadian In
 - `data/*.csv` is the source of truth. Edit in a spreadsheet or text editor.
 - `npm run build` checks the data, works out each soldier's day-by-day track and the close-by moments, and writes JSON to `site/data/`.
 - `site/` is a static site that reads that JSON. `npm run serve` builds and serves it locally.
+  - `index.html` is the story view: sticky map, to-scale timeline with the exact date, scrolling story with quoted sources, one tab per soldier.
+  - `check.html` is a plain data-check view with a date slider.
 
 ## Data files
 
@@ -22,6 +24,13 @@ Starts with Clayton Brown (23rd Battery, 2nd Anti-Tank Regiment, 2nd Canadian In
 | `events.csv` | dated thing that happened to one soldier (birth, enlistment, wound, location...) |
 | `places.csv` | place with coordinates and how precise they are |
 | `sources.csv` | document that facts cite |
+| `quotes.csv` | exact quote from a source, attached to an event |
+| `closeby_notes.csv` | hand-written note about two soldiers being near each other, linked to the stops it describes |
+| `conflicts.csv` | place where sources disagree, naming the two facts |
+| `landmarks.csv` | battle (◆) or memorial (✚) shown on the map |
+| `glossary.csv` | term with a short note, shown as a dotted-underline tooltip |
+| `media/face-<soldier_id>.jpg` | portrait used for the map pin |
+| `import/` | raw files the CSVs were imported from (`node scripts/import_timeline.mjs`) |
 
 Rules the build enforces:
 
@@ -48,7 +57,9 @@ Cloudflare Pages: build command `npm run build`, output directory `site`.
 
 ## Current data
 
-Both grandfathers' places and dates were imported from the Two Grandfathers' War prototype, marked `family`. Next step: confirm against service files and war diaries, and add sources.
+Both grandfathers' stops come from `data/import/grandfathers_timeline.json` with their exact quoted sources (Lynda's booklet, newspapers, Young's 20th Battery history, the Edmondson article, The Quiet Service). Stops with only family sources are marked `family`; stops with a newspaper, book or record are `documented`. Clayton's troop after Ifs is recorded as a disagreement (`conflicts.csv`, c-1).
+
+Next: run the war diary pipeline on the 2nd Anti-Tank Regiment diary (Héritage reels T-16452 and T-16453).
 
 ## Project '44
 

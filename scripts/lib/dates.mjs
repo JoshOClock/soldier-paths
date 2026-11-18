@@ -2,7 +2,7 @@
 // parseDate returns { lo, hi, text } as day numbers since DAY0 (hi null = open-ended), or null.
 // Accepts: 1944-06-19, 1944-06, 1944, 19 Jun 1944, Jun. 19, 1944, Jun 1944, June 1944,
 // Winter 1944 (Dec 1944 to Feb 1945), Spring/Summer/Fall/Autumn 1944, Early/Mid/Late 1944,
-// "A to B" ranges of any of these, "1946 on" (open-ended), and "about"/"c."/"~" prefixes.
+// Early/Mid/Late Aug 1944, "A to B" ranges of any of these (Oct. to Nov. 1944 borrows the year), "1946 on" (open-ended), and "about"/"c."/"~" prefixes.
 
 export const DAY0 = '1900-01-01';
 const MS = 86400000, T0 = Date.UTC(1900, 0, 1);
@@ -22,6 +22,12 @@ function single(s) {
   if ((m = s.match(/^(\d{4})$/))) return { lo: ymd(+m[1], 1, 1), hi: ymd(+m[1], 12, 31) };
   if ((m = s.match(/^(\d{1,2}) ([A-Za-z]+\.?),? (\d{4})$/)) && month(m[2])) { const v = ymd(+m[3], month(m[2]), +m[1]); return { lo: v, hi: v }; }
   if ((m = s.match(/^([A-Za-z]+\.?) (\d{1,2}),? (\d{4})$/)) && month(m[1])) { const v = ymd(+m[3], month(m[1]), +m[2]); return { lo: v, hi: v }; }
+  if ((m = s.match(/^(early|mid|late) ([A-Za-z]+\.?),? (\d{4})$/i)) && month(m[2])) {
+    const y = +m[3], mo = month(m[2]), L = lastDay(y, mo), part = m[1].toLowerCase();
+    if (part === 'early') return { lo: ymd(y, mo, 1), hi: ymd(y, mo, 10) };
+    if (part === 'mid') return { lo: ymd(y, mo, 11), hi: ymd(y, mo, 20) };
+    return { lo: ymd(y, mo, 21), hi: ymd(y, mo, L) };
+  }
   if ((m = s.match(/^([A-Za-z]+\.?),? (\d{4})$/))) {
     const y = +m[2], w = m[1].toLowerCase();
     if (month(m[1])) { const mo = month(m[1]); return { lo: ymd(y, mo, 1), hi: ymd(y, mo, lastDay(y, mo)) }; }
@@ -43,7 +49,14 @@ export function parseDate(text) {
   let r;
   const on = s.match(/^(.*) on(wards)?$/i);
   if (on) { const a = single(on[1]); r = a && { lo: a.lo, hi: null }; }
-  else if (s.includes(' to ')) { const [a, b] = s.split(' to ').map(single); r = a && b && b.hi >= a.lo ? { lo: a.lo, hi: b.hi } : null; }
+  else if (s.includes(' to ')) {
+    let [x, y] = s.split(' to ');
+    // "Oct. to Nov. 1944": the left side borrows the year from the right.
+    const year = y.match(/(\d{4})$/);
+    if (year && !/\d{4}$/.test(x)) x = x + ' ' + year[1];
+    const [a, b] = [single(x), single(y)];
+    r = a && b && b.hi >= a.lo ? { lo: a.lo, hi: b.hi } : null;
+  }
   else r = single(s);
   if (!r) return null;
   if (approx) { r.lo -= 15; if (r.hi != null) r.hi += 15; }

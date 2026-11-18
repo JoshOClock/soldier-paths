@@ -1,3 +1,3 @@
 soldier_id,display_name,service_number,rank,birth_date,birth_place_id,death_date,war,privacy,note
-clayton-brown,Clayton Truan Brown,,Gunner,13 Jan 1920,red-deer,,WW2,public,Service number to add from service file
-gordon-sweet,Gordon Carlyle Sweet,,Captain,23 Feb 1914,yellow-grass,,WW2,public,Service number to add from service file
+clayton-brown,Clayton Truan Brown,,Sergeant,13 Jan 1920,red-deer,,WW2,public,Service file requested from LAC; not received yet
+gordon-sweet,"Gordon Carlyle Sweet, M.B.E.",M29601,Captain,23 Feb 1914,yellow-grass,,WW2,public,Family holds the 160-page LAC service file release

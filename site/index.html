@@ -2,168 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Soldier Paths (data viewer)</title>
-<style>
-  :root { --paper:#eceee8; --ink:#1e2320; --muted:#59625b; --sea:#c6d3d3; --land:#e4dcc4; --border:#a99f84; --a:#b0281c; --b:#2f6b8a; --gold:#b07d12; }
-  * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.5 Georgia, serif; background:var(--paper); color:var(--ink); }
-  header { padding:10px 14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; border-bottom:1px solid var(--border); }
-  header h1 { font-size:17px; margin:0 12px 0 0; }
-  select, button, input { font:inherit; }
-  .wrap { display:grid; grid-template-columns:minmax(0,1fr) 360px; height:calc(100vh - 54px); }
-  canvas { width:100%; height:100%; display:block; background:var(--sea); }
-  aside { padding:14px; overflow:auto; border-left:1px solid var(--border); }
-  .date { font:600 20px "Courier New", monospace; }
-  .card { margin:12px 0; padding:10px 12px; background:#f6f7f3; border-left:4px solid var(--a); }
-  .card.b { border-left-color:var(--b); }
-  .card b { display:block; }
-  .meta { font-size:12.5px; color:var(--muted); }
-  .badge { font:11px monospace; padding:1px 5px; border:1px solid currentColor; border-radius:2px; margin-right:4px; }
-  .close { margin:12px 0; padding:10px 12px; border:1px solid #d9b65c; border-left:4px solid var(--gold); background:rgba(214,170,60,.12); }
-  .slider { display:flex; gap:8px; align-items:center; padding:8px 14px; border-top:1px solid var(--border); position:fixed; bottom:0; left:0; right:360px; background:var(--paper); }
-  .slider input { flex:1; }
-  @media (max-width: 800px) {
-    .wrap { grid-template-columns:1fr; grid-template-rows:45vh auto; height:auto; }
-    aside { border-left:0; padding-bottom:70px; }
-    .slider { right:0; }
-  }
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Soldier Paths</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>Soldier Paths</h1>
-  <label>A <select id="selA"></select></label>
-  <label>B <select id="selB"></select></label>
-  <span class="meta" id="built"></span>
-</header>
-<div class="wrap">
-  <canvas id="map"></canvas>
-  <aside>
-    <div class="date" id="date"></div>
-    <div id="cards"></div>
-    <div id="close"></div>
-    <p class="meta">Data check view built from data/*.csv. Positions hold until the next dated record. Badges show where each position comes from.</p>
-  </aside>
+<nav class="tabs" role="tablist" aria-label="Soldiers" id="tabs"></nav>
+<div class="wrap" id="wrap">
+  <div class="mapbox" id="mapbox">
+    <canvas id="map" role="img" aria-label="Map following the soldier's route"></canvas>
+    <div class="mapzoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
+    <button type="button" class="mapreset" id="mreset" hidden>Back to the story</button>
+    <div class="pop" id="pop" hidden><button type="button" class="popx" id="popx" aria-label="Close">×</button><b id="popt"></b><p id="popd"></p></div>
+    <div class="mapcap" aria-live="polite">
+      <div class="where"><span class="maphint">Tap ◆ battles or ✚ memorials · </span><span id="capDate"></span><span class="age" id="capAge"></span><b id="capPlace"></b><span class="srcl" id="capOther"></span></div>
+      <div class="scale"><span id="scaleTxt">500 km</span><i id="scaleBar" style="width:60px"></i></div>
+    </div>
+  </div>
+  <nav class="tl" id="tl" aria-label="Timeline, to scale"></nav>
+  <main class="story" id="story"><div class="loading">Loading…</div></main>
 </div>
-<div class="slider">
-  <button id="play">Play</button>
-  <input id="t" type="range" min="0" max="1" step="1">
-</div>
-
+<div id="gtip" hidden></div>
 <script src="data/vendor/d3.min.js"></script>
 <script src="data/vendor/topojson-client.min.js"></script>
-<script>
-const MS = 86400000;
-const START = Date.UTC(1939, 8, 1), END = Date.UTC(1946, 11, 31);
-const iso = (t) => new Date(t).toISOString().slice(0, 10);
-const nice = (t) => new Date(t).toLocaleDateString('en-CA', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
-
-let INDEX, CLOSE, LAND, tracks = {}, A, B, cur = START;
-const canvas = document.getElementById('map'), ctx = canvas.getContext('2d');
-const proj = d3.geoOrthographic().clipAngle(90).precision(0.5), path = d3.geoPath(proj, ctx);
-let view = { c: [-40, 50], k: 5000 };
-
-async function load() {
-  [INDEX, CLOSE] = await Promise.all([fetch('data/index.json').then(r => r.json()), fetch('data/closeby.json').then(r => r.json())]);
-  const world = await fetch('data/vendor/countries-50m.json').then(r => r.json());
-  LAND = topojson.feature(world, world.objects.countries);
-  document.getElementById('built').textContent = 'data built ' + INDEX.built;
-  for (const id of ['selA', 'selB']) {
-    const sel = document.getElementById(id);
-    INDEX.soldiers.forEach(s => sel.add(new Option(s.name, s.id)));
-    sel.onchange = pick;
-  }
-  document.getElementById('selB').selectedIndex = Math.min(1, INDEX.soldiers.length - 1);
-  const slider = document.getElementById('t');
-  slider.max = Math.round((END - START) / MS);
-  const q = new URLSearchParams(location.search);
-  if (q.get('date')) { const t = Date.parse(q.get('date') + 'T00:00:00Z'); if (t >= START && t <= END) { cur = t; slider.value = Math.round((t - START) / MS); } }
-  else slider.value = 0;
-  slider.oninput = () => { cur = START + slider.value * MS; update(); };
-  let timer = null;
-  document.getElementById('play').onclick = (e) => {
-    if (timer) { timer.stop(); timer = null; e.target.textContent = 'Play'; return; }
-    e.target.textContent = 'Pause';
-    timer = d3.interval(() => { slider.value = Math.min(+slider.max, +slider.value + 3); slider.oninput(); if (+slider.value >= +slider.max) document.getElementById('play').click(); }, 40);
-  };
-  addEventListener('resize', () => draw());
-  await pick();
-}
-
-async function pick() {
-  const a = document.getElementById('selA').value, b = document.getElementById('selB').value;
-  for (const id of [a, b]) if (!tracks[id]) tracks[id] = await fetch(`data/soldier/${id}.json`).then(r => r.json());
-  A = tracks[a]; B = a === b ? null : tracks[b];
-  update();
-}
-
-function at(doc, t) {
-  const d = iso(t);
-  return doc && doc.track.find(s => s.from <= d && d <= s.to) || null;
-}
-const placeOf = (span) => span && INDEX.places[span.place];
-
-function update() {
-  document.getElementById('date').textContent = nice(cur);
-  const pa = at(A, cur), pb = at(B, cur);
-  const card = (doc, span, cls) => {
-    if (!doc) return '';
-    if (!span) return `<div class="card ${cls}"><b>${doc.soldier.display_name}</b><span class="meta">No record for this date</span></div>`;
-    const pl = placeOf(span), src = INDEX.sources[span.src];
-    return `<div class="card ${cls}"><b>${doc.soldier.display_name}</b>${pl.name}
-      <div class="meta"><span class="badge">${span.conf}</span><span class="badge">${span.status}</span> within about ${span.r} km<br>
-      ${span.from} to ${span.to}<br>Source: ${src ? (src.url ? `<a href="${src.url}">${src.title}</a>` : src.title) : span.src}
-      ${span.unit && INDEX.units[span.unit]?.project44 ? `<br><a href="${INDEX.units[span.unit].project44}">${INDEX.units[span.unit].name} on Project '44</a>` : ''}</div></div>`;
-  };
-  let html = card(A, pa, 'a') + card(B, pb, 'b');
-  if (pa && pb) {
-    const km = Math.round(d3.geoDistance([placeOf(pa).lon, placeOf(pa).lat], [placeOf(pb).lon, placeOf(pb).lat]) * 6371);
-    html += `<p>${km < 1 ? 'Same place' : 'About ' + km.toLocaleString() + ' km apart'}</p>`;
-  }
-  document.getElementById('cards').innerHTML = html;
-  const d = iso(cur), ids = [A?.soldier.soldier_id, B?.soldier.soldier_id];
-  const ep = CLOSE.find(e => e.from <= d && d <= e.to && ids.includes(e.soldiers[0]) && ids.includes(e.soldiers[1]));
-  document.getElementById('close').innerHTML = ep ? `<div class="close"><b>Close by (${ep.tier.replace('_', ' ')})</b><br>${ep.note}</div>` : '';
-  // Frame both pins.
-  const pts = [pa, pb].filter(Boolean).map(s => [placeOf(s).lon, placeOf(s).lat]);
-  if (pts.length) {
-    const c = pts.length === 2 ? d3.geoInterpolate(pts[0], pts[1])(0.5) : pts[0];
-    const spread = pts.length === 2 ? d3.geoDistance(pts[0], pts[1]) * 6371 : 0;
-    view = { c, k: Math.max(150, spread * 0.8) };
-  }
-  draw(pa, pb);
-}
-
-function draw(pa = at(A, cur), pb = at(B, cur)) {
-  const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
-  canvas.width = r.width * dpr; canvas.height = r.height * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const m = Math.min(r.width, r.height);
-  proj.translate([r.width / 2, r.height / 2]).scale(Math.max(m * 0.46, (m / 2) / (view.k / 6371))).rotate([-view.c[0], -view.c[1]]);
-  ctx.clearRect(0, 0, r.width, r.height);
-  ctx.beginPath(); path({ type: 'Sphere' }); ctx.fillStyle = '#c6d3d3'; ctx.fill();
-  ctx.beginPath(); path(LAND); ctx.fillStyle = '#e4dcc4'; ctx.fill(); ctx.strokeStyle = '#a99f84'; ctx.lineWidth = 0.7; ctx.stroke();
-  const route = (doc, color) => {
-    if (!doc) return;
-    const done = doc.track.filter(s => s.from <= iso(cur)).map(s => [placeOf(s).lon, placeOf(s).lat]);
-    ctx.beginPath(); path({ type: 'LineString', coordinates: done }); ctx.strokeStyle = color; ctx.globalAlpha = 0.5; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 1;
-  };
-  route(A, '#b0281c'); route(B, '#2f6b8a');
-  const pin = (span, color, label) => {
-    if (!span) return;
-    const pl = placeOf(span), q = proj([pl.lon, pl.lat]);
-    if (!q) return;
-    const rad = Math.max(4, span.r * proj.scale() / 6371); // uncertainty circle, km to px
-    ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fillStyle = color; ctx.globalAlpha = 0.15; ctx.fill(); ctx.globalAlpha = 1;
-    ctx.beginPath(); ctx.arc(q[0], q[1], 7, 0, 7); ctx.fillStyle = color; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.font = '13px Georgia'; ctx.fillStyle = '#1e2320'; ctx.fillText(label + ' · ' + pl.name, q[0] + 11, q[1] + 4);
-  };
-  pin(pa, '#b0281c', A?.soldier.display_name.split(' ')[0]);
-  pin(pb, '#2f6b8a', B?.soldier.display_name.split(' ')[0]);
-}
-
-load();
-</script>
+<script src="app.js"></script>
 </body>
 </html>

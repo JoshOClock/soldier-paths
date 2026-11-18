@@ -16,9 +16,9 @@ const warnings = [];
 const err = (m) => errors.push(m);
 const warn = (m) => warnings.push(m);
 
-function load(name, required) {
+function load(name, required, optional = false) {
   const file = path.join(DATA, name + '.csv');
-  if (!fs.existsSync(file)) { err(`missing data/${name}.csv`); return []; }
+  if (!fs.existsSync(file)) { if (!optional) err(`missing data/${name}.csv`); return []; }
   const { header, rows } = parseCsv(fs.readFileSync(file, 'utf8'));
   for (const col of required) if (!header.includes(col)) err(`data/${name}.csv: missing column "${col}"`);
   rows.forEach((r, i) => { r._where = `data/${name}.csv row ${i + 2}`; });
@@ -45,6 +45,11 @@ const unitLocs = load('unit_locations', ['location_id', 'unit_id', 'date_from', 
 const events = load('events', ['event_id', 'soldier_id', 'kind', 'date', 'place_id', 'source_id', 'confidence', 'status']);
 const places = load('places', ['place_id', 'name', 'lon', 'lat', 'precision_km']);
 const sources = load('sources', ['source_id', 'kind', 'title']);
+const quotes = load('quotes', ['quote_id', 'event_id', 'source_id', 'text'], true);
+const notes = load('closeby_notes', ['note_id', 'soldier_a', 'events_a', 'soldier_b', 'events_b', 'title', 'text'], true);
+const landmarks = load('landmarks', ['landmark_id', 'name', 'kind', 'lon', 'lat'], true);
+const glossary = load('glossary', ['term', 'note'], true);
+const conflicts = load('conflicts', ['conflict_id', 'soldier_id', 'fact_a', 'fact_b', 'note'], true);
 
 const S = index(soldiers, 'soldier_id', 'soldiers');
 const U = index(units, 'unit_id', 'units');
@@ -52,7 +57,9 @@ const P = index(places, 'place_id', 'places');
 const SRC = index(sources, 'source_id', 'sources');
 index(postings, 'posting_id', 'postings');
 index(unitLocs, 'location_id', 'unit_locations');
-index(events, 'event_id', 'events');
+const E = index(events, 'event_id', 'events');
+const PO = new Map(postings.map((p) => [p.posting_id, p]));
+index(quotes, 'quote_id', 'quotes');
 
 const CONFIDENCE = ['documented', 'inherited', 'inferred', 'family'];
 const STATUS = ['ai_draft', 'checked', 'confirmed', 'disputed', 'family'];
@@ -98,6 +105,13 @@ for (const r of events) {
   if (!r._range) err(`${r._where}: can't read date "${r.date}"`);
 }
 
+for (const q of quotes) { checkRef(q, 'event_id', E, 'event'); checkRef(q, 'source_id', SRC, 'source'); }
+for (const n of notes) {
+  checkRef(n, 'soldier_a', S, 'soldier'); checkRef(n, 'soldier_b', S, 'soldier');
+  for (const id of [...n.events_a.split(';'), ...n.events_b.split(';')].filter(Boolean)) if (!E.has(id)) err(`${n._where}: unknown event "${id}"`);
+}
+for (const c of conflicts) for (const f of [c.fact_a, c.fact_b]) if (!E.has(f) && !PO.has(f)) err(`${c._where}: unknown fact "${f}"`);
+
 if (errors.length) {
   console.error(`\n${errors.length} error(s):`);
   errors.forEach((e) => console.error('  ' + e));
@@ -134,11 +148,21 @@ function trackFor(s) {
   // Events are read in the order they are written for each soldier. A vague date ("Jul 1944")
   // listed after a precise one ("8 Jul 1944") starts no earlier than the row before it.
   const own = events.filter((e) => e.soldier_id === s.soldier_id && e.place_id);
+  // Consecutive stops with the same vague date ("March 1945" three times) are spread evenly across it.
   let prev = -Infinity;
-  for (const e of own) {
-    if (e._range.hi != null && e._range.hi < prev) warn(`${e._where}: out of order (ends before the row above starts)`);
-    e._start = Math.max(e._range.lo, prev);
-    prev = e._start;
+  for (let i = 0; i < own.length; ) {
+    const e = own[i];
+    let j = i + 1;
+    while (j < own.length && own[j]._range.lo === e._range.lo && own[j]._range.hi === e._range.hi && e._range.hi != null && e._range.hi > e._range.lo) j++;
+    const n = j - i, span = e._range.hi == null ? 0 : e._range.hi - e._range.lo + 1;
+    for (let k = i; k < j; k++) {
+      const ev = own[k];
+      if (ev._range.hi != null && ev._range.hi < prev) warn(`${ev._where}: out of order (ends before the row above starts)`);
+      const spread = n > 1 ? ev._range.lo + Math.floor(((k - i) * span) / n) : ev._range.lo;
+      ev._start = Math.max(spread, prev + (ev._range.lo <= prev ? 1 : 0));
+      prev = ev._start;
+    }
+    i = j;
   }
   const days = [];
   for (let d = 0; d <= LAST_DAY; d++) {
@@ -195,27 +219,45 @@ function closeBy(a, b, ta, tb) {
       else if (dist - x.r - y.r <= CLOSE_KM) tier = 'possibly';
     }
     if (tier) {
-      if (cur && cur.to === d - 1) { cur.to = d; if (dist < cur.minKm) { cur.minKm = dist; cur.closest = d; cur.a = x; cur.b = y; } if (rank(tier) > rank(cur.tier)) cur.tier = tier; }
-      else { cur = { from: d, to: d, minKm: dist, closest: d, tier, a: x, b: y }; episodes.push(cur); }
+      if (cur && cur.to === d - 1 && cur.pa === x.place && cur.pb === y.place) { cur.to = d; if (dist < cur.minKm) { cur.minKm = dist; cur.closest = d; cur.a = x; cur.b = y; } if (rank(tier) > rank(cur.tier)) cur.tier = tier; }
+      else { cur = { from: d, to: d, minKm: dist, closest: d, tier, a: x, b: y, pa: x.place, pb: y.place }; episodes.push(cur); }
     }
   }
   return episodes.map((e) => ({
+    human_note: humanNote(a, b, e),
     soldiers: [a.soldier_id, b.soldier_id], from: dayToIso(e.from), to: dayToIso(e.to), closest: dayToIso(e.closest),
     km: Math.round(e.minKm * 10) / 10, tier: e.tier, places: [P.get(e.a.place).name, P.get(e.b.place).name],
-    sources: [...new Set([e.a.src, e.b.src])], note: note(a, b, e),
+    sources: [...new Set([e.a.src, e.b.src])], facts: [e.a.fact, e.b.fact], note: note(a, b, e),
   }));
 }
+// A hand-written note belongs to an episode when one of its named events covers part of the episode.
+// Best match: the note naming both stops the episode is built on, then one naming either, then date overlap.
+function humanNote(a, b, e) {
+  const cover = (id) => { const ev = E.get(id); const lo = ev._start ?? ev._range.lo; const hi = ev._range.hi ?? lo + 365; return lo <= e.to && Math.max(hi, lo) >= e.from; };
+  const facts = [e.a.fact, e.b.fact];
+  let best = null, bestScore = 0;
+  for (const n of notes) {
+    if (!((n.soldier_a === a.soldier_id && n.soldier_b === b.soldier_id) || (n.soldier_a === b.soldier_id && n.soldier_b === a.soldier_id))) continue;
+    const ids = [...n.events_a.split(';'), ...n.events_b.split(';')].filter(Boolean);
+    const score = facts.filter((f) => ids.includes(f)).length * 10 + (ids.some(cover) ? 1 : 0);
+    if (score > bestScore) { best = n; bestScore = score; }
+  }
+  if (best) best._used = true;
+  return best ? { title: best.title, text: best.text, events: [...best.events_a.split(';'), ...best.events_b.split(';')].filter(Boolean) } : null;
+}
+const MON = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+const niceDate = (d) => { const [y, m, dd] = dayToIso(d).split('-').map(Number); return `${MON[m - 1]} ${dd}, ${y}`; };
 const rank = (t) => ({ possibly: 1, likely: 2, same_unit: 3 })[t] || 0;
 const first = (s) => s.display_name.split(' ')[0];
 
 // Template note. Never says the men met: no source in this pipeline records contact.
 function note(a, b, e) {
-  const when = e.from === e.to ? dayToIso(e.from) : `${dayToIso(e.from)} to ${dayToIso(e.to)}`;
+  const when = e.from === e.to ? niceDate(e.from) : `${niceDate(e.from)} to ${niceDate(e.to)}`;
   const pa = P.get(e.a.place).name, pb = P.get(e.b.place).name;
   const where = pa === pb ? `both near ${pa}` : `${first(a)} near ${pa} and ${first(b)} near ${pb}, about ${Math.round(e.minKm)} km apart`;
   const soft = [e.a, e.b].filter((x) => x.conf !== 'documented').length
     ? ' At least one position is estimated, so the real distance may have been larger or smaller.' : '';
-  return `${when}: records put ${where}.${soft} No record says they met.`;
+  return `From ${when}, the records put ${where}.${soft} No record says they met.`.replace(/^From (\w+\.? \d+, \d{4}), the/, 'On $1, the');
 }
 
 // ---------- write ----------
@@ -224,6 +266,7 @@ fs.mkdirSync(path.join(OUT, 'soldier'), { recursive: true });
 // Vendor the map libraries so the site has no CDN dependency.
 const VENDOR = path.join(ROOT, 'site', 'data', 'vendor');
 fs.mkdirSync(VENDOR, { recursive: true });
+if (fs.existsSync(path.join(DATA, 'media'))) fs.cpSync(path.join(DATA, 'media'), path.join(OUT, 'media'), { recursive: true });
 for (const f of ['d3/dist/d3.min.js', 'topojson-client/dist/topojson-client.min.js', 'world-atlas/countries-50m.json']) {
   const from = path.join(ROOT, 'node_modules', f);
   if (fs.existsSync(from)) fs.copyFileSync(from, path.join(VENDOR, path.basename(f)));
@@ -236,7 +279,14 @@ const placeOut = Object.fromEntries(places.map((p) => [p.place_id, { name: p.nam
 const strip = ({ _where, _range, _start, ...r }) => r;
 fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify({
   built: new Date().toISOString().slice(0, 10), day0: DAY0,
-  soldiers: pub.map((s) => ({ id: s.soldier_id, name: s.display_name, rank: s.rank, born: s.birth_date })),
+  soldiers: pub.map((s) => {
+    const born = parseDate(s.birth_date);
+    const face = fs.existsSync(path.join(DATA, 'media', `face-${s.soldier_id}.jpg`)) ? `data/media/face-${s.soldier_id}.jpg` : '';
+    const unit = postings.find((p) => p.soldier_id === s.soldier_id);
+    return { id: s.soldier_id, name: s.display_name, rank: s.rank, born: born ? dayToIso(born.lo) : '', face, unit: unit ? U.get(unit.unit_id).name : '' };
+  }),
+  landmarks: landmarks.map((l) => ({ name: l.name, kind: l.kind, lon: +l.lon, lat: +l.lat, maxKm: +l.max_view_km || 400, d: l.description })),
+  glossary: glossary.map((g) => [g.term, g.note]),
   units: Object.fromEntries(units.map((u) => [u.unit_id, { name: u.name, kind: u.kind, parent: u.parent_id, project44: u.project44_url || '' }])),
   places: placeOut,
   sources: Object.fromEntries(sources.map((s) => [s.source_id, strip(s)])),
@@ -246,7 +296,8 @@ for (const s of pub) {
   fs.writeFileSync(path.join(OUT, 'soldier', s.soldier_id + '.json'), JSON.stringify({
     soldier: strip(s),
     postings: postings.filter((p) => p.soldier_id === s.soldier_id).map(strip),
-    events: events.filter((e) => e.soldier_id === s.soldier_id).map(strip),
+    events: events.filter((e) => e.soldier_id === s.soldier_id).map((e) => ({ ...strip(e), start: dayToIso(e._start ?? e._range.lo), end: e._range.hi == null ? null : dayToIso(e._range.hi), quotes: quotes.filter((q) => q.event_id === e.event_id).map(strip) })),
+    conflicts: conflicts.filter((c) => c.soldier_id === s.soldier_id).map(strip),
     track: tracks.get(s.soldier_id),
   }, null, 1));
 }
@@ -255,5 +306,6 @@ const pairs = [];
 for (let i = 0; i < pub.length; i++) for (let j = i + 1; j < pub.length; j++) pairs.push(...closeBy(pub[i], pub[j], tracks.get(pub[i].soldier_id), tracks.get(pub[j].soldier_id)));
 fs.writeFileSync(path.join(OUT, 'closeby.json'), JSON.stringify(pairs, null, 1));
 
+for (const n of notes) if (!n._used) warn(`${n._where}: hand-written note "${n.title}" matched no computed episode`);
 if (warnings.length) { console.warn(`${warnings.length} warning(s):`); warnings.forEach((w) => console.warn('  ' + w)); }
 console.log(`Built ${pub.length} soldier(s), ${places.length} places, ${pairs.length} close-by episode(s) -> site/data/`);
