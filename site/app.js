@@ -181,7 +181,8 @@ const SECONDARY = new Set(['book', 'article']);
 function figure(m) {
   const src = IDX.sources[m.source_id];
   const credit = [m.credit, m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">source</a>` : ''].filter(Boolean).join(' · ');
-  return `<figure class="${m.kind === 'portrait' ? 'portrait' : 'clip'}"><img src="${esc(m.src)}" alt="${esc(m.caption)}" loading="lazy"><figcaption>${esc(m.caption)}${credit ? ` <span class="srcl">${credit}</span>` : ''}</figcaption></figure>`;
+  const img = `<img src="${esc(m.src)}" alt="${esc(m.caption)}" loading="lazy">`;
+  return `<figure class="${m.kind === 'portrait' ? 'portrait' : m.kind === 'panorama' ? 'pano' : 'clip'}">${m.kind === 'panorama' ? `<div class="panoscroll">${img}</div>` : img}<figcaption>${esc(m.caption)}${credit ? ` <span class="srcl">${credit}</span>` : ''}</figcaption></figure>`;
 }
 const CONF = { documented: ['c-doc', 'documented'], family: ['c-fam', 'family record'], inherited: ['c-inf', 'from his unit'], inferred: ['c-inf', 'estimated'] };
 

@@ -1,3 +1,54 @@
 media_id,soldier_id,event_id,file,kind,caption,credit,source_id,url,rights
 m-clayton-portrait,clayton-brown,,portrait-clayton-brown.jpg,portrait,"Sgt. Clayton Brown. The shoulder title reads 2nd Anti-Tank, RCA, above the CANADA flash and the 2nd Division patch, with a sergeant's three stripes.",Brown family,src-prototype,,family
 m-gordon-portrait,gordon-sweet,,portrait-gordon-sweet.jpg,portrait,"Capt. Gordon Sweet, R.C.A.M.C. The cap and collar badges are the Medical Corps', and the three pips on the shoulder are a captain's.",Sweet family,src-prototype,,family
+m-clayton-brothers,clayton-brown,clayton-brown-01,clayton-brothers.jpg,photo,"Ralph, Tom and Clayton",Brown family,src-prototype,,family
+m-clayton-portrait1939,clayton-brown,clayton-brown-03,clayton-portrait1939.jpg,photo,Aug. 1939,Brown family,src-prototype,,family
+m-clayton-front1940,clayton-brown,clayton-brown-07,clayton-front1940.jpg,photo,"Clayton, circled, seated in the front row of the regiment photo, September 1940. There looks to be a single stripe on his sleeve, the rank of lance-bombardier.",Brown family,src-prototype,,family
+m-clayton-regiment1940,clayton-brown,clayton-brown-07,clayton-regiment1940.jpg,panorama,"The whole 2nd Anti-Tank Regiment, England, September 1940. Taken by the Service Photo Co. of Pirbright, Surrey, a few miles from Farnborough. Clayton is seated in the front row, about a third of the way in from the left (close-up above). Swipe to see the whole photo. Galt Museum &amp; Archives, P19800097000.",Brown family,src-prototype,,family
+m-clayton-jack1941,clayton-brown,clayton-brown-08,clayton-jack1941.jpg,photo,"Clayton and Jack Williams, 1941",Brown family,src-prototype,,family
+m-clayton-king1941,clayton-brown,clayton-brown-08,clayton-king1941.jpg,photo,"King George VI and Queen Elizabeth inspect Clayton's own 23rd Battery at Aldershot, March 1941. The King stands behind the 2-pounder; the Queen is beside Maj.-Gen. Victor Odlum, commander of the 2nd Canadian Division. The men in the ranks aren't named, so Clayton may be among them. Galt Museum &amp; Archives, P19991039099.",Library and Archives Canada,,,
+m-clayton-wedding,clayton-brown,clayton-brown-10,clayton-wedding.jpg,photo,"Clayton and Lynda, Sept 17/43",Brown family,src-prototype,,family
+m-clayton-jeep,clayton-brown,clayton-brown-16,clayton-jeep.jpg,photo,The Jeep that took him through the war,Brown family,src-prototype,,family
+m-clayton-currie,clayton-brown,clayton-brown-16,clayton-currie.jpg,photo,"Maj. David Currie (left of centre, holding a revolver) accepting the surrender of German troops at St. Lambert-sur-Dives, Aug. 19, 1944. Canadian Army photo, Library and Archives Canada",Library and Archives Canada,,,
+m-clayton-carrier,clayton-brown,clayton-brown-22,clayton-carrier.jpg,photo,"Radio Carrier, where officer rode",Brown family,src-prototype,,family
+m-clayton-valentine,clayton-brown,clayton-brown-23,clayton-valentine.jpg,photo,A 17lb gun on an English Valentine,Brown family,src-prototype,,family
+m-clayton-germany,clayton-brown,clayton-brown-25,clayton-germany.jpg,photo,"Clayton with his self-propelled gun, Germany, 1945",Brown family,src-prototype,,family
+m-clayton-oldenburg,clayton-brown,clayton-brown-28,clayton-oldenburg.jpg,photo,"The regiment's self-propelled 17-pounders on parade near Oldenburg, May 15, 1945. The ""46"" painted on the gun is the regiment's unit sign, the same one on the gun in Clayton's own photo. Library and Archives Canada, MIKAN 3563575",Library and Archives Canada,,,
+m-clayton-iledefrance,clayton-brown,clayton-brown-31,clayton-iledefrance.jpg,photo,"Clayton (right) on the deck of the Île de France, August 1945, with Tpr. Clifford Hooey and Sgt. Alton Morris. A Canadian Army photo, printed on the front page of the Edmonton Bulletin, Aug. 7, 1945 (Peel's Prairie Provinces, via Internet Archive). The Red Deer Advocate reran it on Aug. 15.",Canadian Army photo,,,
+m-clayton-clip-1,clayton-brown,clayton-brown-03,clip-clayton-red-deer-advocate-1939-11-29-death-of-l-e-brown.jpg,clipping,"Red Deer Advocate, Nov. 29, 1939: the death of Clayton's father, L. E. Brown",,src-red-deer-advocate-nov-29-1939-death-of-l-e-brown,,
+m-clayton-clip-2,clayton-brown,clayton-brown-31,clip-clayton-red-deer-advocate-1945-06-13-lynda-arrives.jpg,clipping,"Red Deer Advocate, June 13, 1945: Lynda arrives in Red Deer",,src-red-deer-advocate-june-13-1945-local-happenings,,
+m-clayton-clip-3,clayton-brown,clayton-brown-31,clip-clayton-edmonton-bulletin-1945-08-07-clayton-on-ile-de-france.jpg,clipping,"Edmonton Bulletin, Aug. 7, 1945, front page",,,,
+m-clayton-clip-4,clayton-brown,clayton-brown-31,clip-clayton-red-deer-advocate-1945-08-15-clayton-on-ile-de-france.jpg,clipping,"Red Deer Advocate, Aug. 15, 1945: ""Local boys on their way home""",,src-red-deer-advocate-aug-15-1945-local-boys-on-their-way-home,,
+m-clayton-clip-5,clayton-brown,clayton-brown-32,clip-clayton-lacombe-globe-the-tank-killers-clean.jpg,clipping,"Lacombe Globe, ""The tank killers""",,src-lacombe-globe-the-tank-killers,,
+m-clayton-clip-6,clayton-brown,clayton-brown-32,clip-clayton-lacombe-globe-lacombe-remembers-its-veterans-clean.jpg,clipping,"Lacombe Globe, ""Lacombe remembers its veterans""",,src-lacombe-globe-lacombe-remembers-its-veterans,,
+m-gordon-21,gordon-sweet,gordon-sweet-02,gordon-21.jpg,photo,"History of Pharmacy in Alberta, p. 324",,,,
+m-gordon-22,gordon-sweet,gordon-sweet-03,gordon-22.jpg,photo,"Lacombe: The First Century, p. 387",,,,
+m-gordon-23,gordon-sweet,gordon-sweet-03,gordon-23.jpg,photo,"Lacombe: The First Century, p. 341",,,,
+m-gordon-24,gordon-sweet,gordon-sweet-04,gordon-24.jpg,clipping,"Edmonton Bulletin, May 4, 1940",,,,
+m-gordon-25,gordon-sweet,gordon-sweet-05,gordon-25.jpg,clipping,"Lacombe Globe, Sept. 12, 1940",,,,
+m-gordon-26,gordon-sweet,gordon-sweet-05,gordon-26.jpg,photo,The same article,,,,
+m-gordon-27,gordon-sweet,gordon-sweet-06,gordon-27.jpg,clipping,"Edmonton Bulletin, Aug. 11, 1941",,,,
+m-gordon-28,gordon-sweet,gordon-sweet-06,gordon-28.jpg,photo,"The same article, continued",,,,
+m-gordon-29,gordon-sweet,gordon-sweet-08,gordon-29.jpg,photo,"History of Pharmacy in Alberta, p. 242",,,,
+m-gordon-30,gordon-sweet,gordon-sweet-11,gordon-30.jpg,clipping,"Lacombe Globe, June 30, 1943",,,,
+m-gordon-31,gordon-sweet,gordon-sweet-17,gordon-31.jpg,clipping,"Lacombe Globe, Nov. 30, 1944",,,,
+m-gordon-32,gordon-sweet,gordon-sweet-21,gordon-32.jpg,clipping,"Edmonton Bulletin, Dec. 14, 1945, p. 1",,,,
+m-gordon-33,gordon-sweet,gordon-sweet-21,gordon-33.jpg,photo,Continued on p. 3,,,,
+m-gordon-34,gordon-sweet,gordon-sweet-23,gordon-34.jpg,clipping,"Edmonton Bulletin, Apr. 10, 1946",,,,
+m-gordon-35,gordon-sweet,gordon-sweet-25,gordon-35.jpg,clipping,"Edmonton Bulletin, July 11, 1947, p. 11",,,,
+m-gordon-36,gordon-sweet,gordon-sweet-25,gordon-36.jpg,photo,"The list, continued on p. 12",,,,
+m-gordon-37,gordon-sweet,gordon-sweet-26,gordon-37.jpg,clipping,"Edmonton Bulletin, June 9, 1947",,,,
+m-gordon-38,gordon-sweet,gordon-sweet-26,gordon-38.jpg,photo,"Presidents of the Lacombe Lions Club, Lacombe: The First Century, p. 284",,,,
+m-gordon-39,gordon-sweet,gordon-sweet-26,gordon-39.jpg,clipping,"Edmonton Bulletin, Oct. 27, 1947",,,,
+m-gordon-40,gordon-sweet,gordon-sweet-27,gordon-40.jpg,clipping,"Edmonton Bulletin, Apr. 16, 1948",,,,
+m-gordon-41,gordon-sweet,gordon-sweet-27,gordon-41.jpg,clipping,"Lacombe Globe, July 15, 1948",,,,
+m-gordon-42,gordon-sweet,gordon-sweet-28,gordon-42.jpg,photo,"Gordon, newly elected Board of Trade president, with Min. Lacombe: The First Century, p. 111",,,,
+m-gordon-43,gordon-sweet,gordon-sweet-28,gordon-43.jpg,photo,"Lacombe: The First Century, p. 379",,,,
+m-gordon-44,gordon-sweet,gordon-sweet-28,gordon-44.jpg,photo,"Lacombe: The First Century, p. 215",,,,
+m-gordon-45,gordon-sweet,gordon-sweet-28,gordon-45.jpg,photo,"Gordon (left) with Wes Jackson, 1963. Lacombe: The First Century, p. 304",,,,
+m-gordon-46,gordon-sweet,gordon-sweet-27,gordon-46.jpg,clipping,"Edmonton Bulletin, Nov. 12, 1938",,,,
+m-gordon-47,gordon-sweet,gordon-sweet-27,gordon-47.jpg,clipping,"Edmonton Bulletin, Oct. 29, 1941",,,,
+m-gordon-48,gordon-sweet,gordon-sweet-27,gordon-48.jpg,photo,"Lacombe: The First Century, p. 218",,,,
+m-gordon-49,gordon-sweet,gordon-sweet-27,gordon-49.jpg,photo,"Min Sweet (left) with Marsene Ross. Lacombe: The First Century, p. 294",,,,
+m-gordon-50,gordon-sweet,gordon-sweet-27,gordon-50.jpg,photo,"Lacombe: The First Century, p. 381",,,,
+m-gordon-51,gordon-sweet,gordon-sweet-21,gordon-51.jpg,photo,"Service record: MBE, gazetted Jan. 24, 1946, for North West Europe including D-Day. 1939-45 Star and War Medal.","Service file, Library and Archives Canada",,,
