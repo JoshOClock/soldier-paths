@@ -16,7 +16,8 @@
   <div class="mapbox" id="mapbox">
     <div id="tiles" aria-hidden="true"></div>
     <canvas id="map" role="img" aria-label="Map following the soldier's route"></canvas>
-    <div class="mapzoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
+    <div class="mapzoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button><button type="button" id="sheettoggle" class="sheettoggle" aria-pressed="true" title="Show the 1944–45 army map sheets where they exist" hidden>1944</button></div>
+    <div class="sheetattr" id="sheetattr" hidden></div>
     <button type="button" class="mapreset" id="mreset" hidden>Back to the story</button>
     <div class="pop" id="pop" hidden><button type="button" class="popx" id="popx" aria-label="Close">×</button><b id="popt"></b><p id="popd"></p></div>
     <div class="attr" id="attr" hidden>© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://openfreemap.org">OpenFreeMap</a> · terrain Mapzen/AWS</div>

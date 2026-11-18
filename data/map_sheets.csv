@@ -1,0 +1,71 @@
+sheet_id,name,scale,kind,published,west,south,east,north
+Caen_1944,Caen 40/16 SW,1:25000,Defence overprint,1944-05-01,-0.444,49.086,-0.189,49.216
+Falaise_1944,Falaise 40/12 NW,1:25000,Defence overprint (Op. Totalize),1944-08-06,-0.399,48.819,-0.178,48.935
+Potigny_1944,Potigny 40/14 SW,1:25000,Defence overprint (Op. Totalize),1944-08-06,-0.402,48.909,-0.183,49.034
+StPierre_1944,St. Pierre,1:25000,Defence overprint (Op. Totalize),1944-08-06,-0.198,48.908,0.021,49.030
+Mezidon_1944,Mézidon 40/14 NE,1:25000,Defence overprint (Op. Totalize),1944-08-06,-0.202,49.003,0.022,49.120
+LeHavreNW_1944,Le Havre NW,1:10000,Town plan defence overprint,1944-09-05,0.050,49.497,0.150,49.549
+LeHavreSW_1944,Le Havre SW,1:10000,Town plan defence overprint,1944-09-05,0.059,49.460,0.153,49.508
+LeHavreE_1944,Le Havre E,1:10000,Town plan defence overprint,1944-09-05,0.125,49.464,0.220,49.525
+PortofRouen_1943,Port of Rouen,1:15000,Port plan,1943-03-01,0.944,49.353,1.142,49.472
+Bernevel_1942,Berneval (Dieppe),1:12500,Home Forces sheet,1942-06-01,1.116,49.916,1.239,49.976
+Dunkerque_1944,Dunkerque,1:25000,Defence overprint,1944-09-11,2.230,50.949,2.468,51.071
+Calais_1944,Calais,1:25000,Defence overprint,1944-09-12,1.741,50.868,1.983,50.997
+ZeebruggeSW_10091944,Zeebrugge SW,1:25000,Defence overprint,1944-09-10,3.132,51.188,3.374,51.332
+ZeebruggeSW_03101944,Zeebrugge SW,1:25000,Defence overprint,1944-10-03,3.135,51.191,3.373,51.316
+ZeebruggeNW_1944,Zeebrugge NW,1:25000,Defence overprint,1944-10-09,3.126,51.282,3.365,51.408
+Vlissingen_1944,Vlissingen West,1:25000,Defence overprint,1944-09-13,3.437,51.384,3.681,51.506
+KoudekerkeVlissingenOostsouburg_1944,Koudekerke-Vlissingen,1:10000,Defence overprint,1944-10-28,3.531,51.434,3.658,51.492
+GoingMapFranceBelgium_1944,Roggel,1:25000,Going map,1944-01-01,5.839,51.157,6.042,51.303
+Oosterhout_1945,Oosterhout,1:25000,Emergency printing,1945-01-20,4.836,51.605,5.070,51.731
+Almerk_1945,Almkerk,1:25000,Defence overprint,1945-01-20,4.831,51.696,5.064,51.831
+Groesbeek_1945,Groesbeek South,1:12500,Defence overprint,1945-02-02,5.890,51.724,6.006,51.791
+Gennep_1945,Gennep,1:12500,Defence overprint,1945-01-20,5.900,51.680,6.000,51.740
+Kranenburg_01171945,Kranenburg,1:12500,Defence overprint,1945-01-17,5.994,51.731,6.089,51.804
+Kranenburg_02021945,Kranenburg,1:12500,Defence overprint,1945-02-02,5.994,51.734,6.090,51.805
+Cleve_1945,Cleve,1:12500,Defence overprint,1945-02-02,6.079,51.732,6.171,51.804
+Millingen_1944,Millingen,1:25000,Defence overprint,1944-12-01,5.992,51.760,6.184,51.917
+Emmerich_1944,Emmerich,1:25000,Defence overprint,1944-12-01,6.157,51.758,6.345,51.914
+Goch_1944,Goch,1:25000,Map sheet,1944-12-01,5.989,51.560,6.183,51.717
+Calcar_1944,Calcar,1:25000,Defence overprint,1944-12-16,6.135,51.690,6.401,51.807
+CompositeMapGermany_1942,Udem (composite),1:25000,Operation Blockbuster overprint,1945-02-01,6.217,51.600,6.408,51.748
+Geldern_1944,Geldern,1:25000,Defence overprint,1944-12-18,6.139,51.463,6.340,51.618
+Geldern_02061945,Geldern,1:25000,Defence overprint,1945-02-06,6.135,51.463,6.342,51.621
+Geldern_02181945,Geldern,1:25000,Defence overprint,1945-02-18,6.126,51.461,6.341,51.619
+IssumGoing_1944,Issum,1:25000,Going map,1944-10-12,6.316,51.488,6.578,51.604
+IssumDefence_1944v1,Issum,1:25000,Defence overprint,1944-12-18,6.310,51.490,6.565,51.605
+IssumDefence_1945v1,Issum,1:25000,Defence overprint,1945-02-06,6.324,51.488,6.580,51.604
+Rees_1944,Rees,1:25000,Defence overprint,1944-12-18,6.314,51.690,6.569,51.807
+Rees_01191945,Rees,1:25000,Defence overprint,1945-01-19,6.322,51.691,6.575,51.809
+Rees_02061945,Rees,1:25000,Defence overprint,1945-02-06,6.320,51.692,6.575,51.808
+Rees_02121945,Rees,1:25000,Defence overprint,1945-02-12,6.314,51.691,6.568,51.808
+Xanten_1944,Xanten,1:25000,Map sheet,1944-12-01,6.321,51.591,6.571,51.705
+Xanten_1945,Xanten,1:25000,Defence overprint,1945-02-20,6.324,51.592,6.550,51.710
+Wesel_1944,Wesel,1:25000,Defence overprint,1944-12-01,6.487,51.588,6.744,51.706
+Wesel_01191945,Wesel,1:25000,Defence overprint,1945-01-19,6.488,51.592,6.737,51.707
+Wesel_02061945,Wesel,1:25000,Defence overprint,1945-02-06,6.487,51.591,6.741,51.707
+Wesel_02121945,Wesel,1:25000,Defence overprint,1945-02-12,6.484,51.577,6.736,51.709
+Rheinberg_1945,Rheinberg,1:25000,Defence overprint,1945-01-22,6.488,51.492,6.741,51.615
+Blitterswijk_1944,Blitterswijk,1:25000,Engineer overprint,1944-12-01,5.964,51.464,6.173,51.620
+Blitterswijk_1945,Blitterswijk,1:25000,Defence overprint,1945-02-06,5.963,51.464,6.184,51.619
+Tegelen_1944,Tegelen,1:25000,Going map,1944-01-01,5.991,51.259,6.190,51.422
+RhineGoingMap_1944,Rhine composite,1:25000,Going map,1944-09-28,6.110,51.289,6.370,51.403
+Kempen_1944,Kempen,1:25000,Going map,1944-09-28,6.318,51.289,6.575,51.405
+Versen_1944,Versen,1:25000,Going map,1944-01-01,6.315,51.188,6.570,51.304
+Waldniel_1944,Waldniel,1:25000,Going map,1944-01-01,6.151,51.189,6.406,51.303
+Wegberg_1944,Wegberg,1:25000,Going map,1944-01-01,6.148,51.089,6.406,51.204
+Heinsberg_1944,Heinsberg,1:25000,Going map,1944-01-01,5.983,50.987,6.237,51.105
+Erkelenz_1944,Erkelenz,1:25000,Going map,1944-01-01,6.152,50.989,6.405,51.104
+ArnhemEast_1945,Arnhem East,1:12500,Emergency edition,1945-03-01,5.883,51.949,6.001,52.008
+Renen_1945,Renen,1:25000,Defence overprint,1945-03-27,5.472,51.887,5.708,52.005
+Garderen_1945,Garderen,1:25000,Defence overprint,1945-03-22,5.773,52.161,6.032,52.285
+Voorst_1945,Voorst,1:25000,Defence overprint,1945-03-19,5.975,52.062,6.177,52.217
+Zutphen_1944,Zutphen,1:25000,Geological overprint,1944-01-01,6.106,52.052,6.354,52.225
+Deventer_1944,Deventer,1:25000,Geological overprint,1944-01-01,5.938,52.153,6.177,52.323
+Bathman_1944,Bathmen,1:25000,Geological overprint,1944-01-01,6.103,52.154,6.353,52.325
+LeidenWest_1945,Leiden West,1:25000,Defence overprint,1945-04-12,4.292,52.112,4.485,52.260
+LeidenEast_1945,Leiden East,1:25000,Defence overprint,1945-04-12,4.422,52.116,4.618,52.262
+Ijmuiden_1945,IJmuiden,1:25000,Defence overprint,1945-04-12,4.483,52.385,4.707,52.535
+Meppen_1945,Meppen,1:25000,Defence overprint,1945-02-14,7.139,52.590,7.407,52.706
+Oldenburg_1945,Oldenburg,1:25000,Defence overprint,1945-04-11,8.150,53.089,8.410,53.205
+Emden_1945v1,Emden,1:25000,Defence overprint,1945-04-11,7.150,53.290,7.390,53.408

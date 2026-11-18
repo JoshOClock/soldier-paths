@@ -369,6 +369,48 @@ function restyleTiles() {
     ML.addSource('terrain', { type: 'raster-dem', tiles: [TERRAIN], tileSize: 256, maxzoom: 13, encoding: 'terrarium' });
     ML.addLayer({ id: 'hills', type: 'hillshade', source: 'terrain', paint: { 'hillshade-shadow-color': dark ? '#000000' : '#59625b', 'hillshade-highlight-color': dark ? '#3a3f35' : '#f4efe0', 'hillshade-exaggeration': 0.35 } }, firstSymbol);
   }
+  addSheets();
+}
+
+// ---------------- 1944–45 map sheets ----------------
+// Real wartime 1:25,000 / 1:12,500 sheets (mostly defence overprints), already georeferenced.
+// Sheets sit on top of the modern map. Where a place has several editions, the one in force on the
+// date being read is shown (the newest edition published on or before that date, else the first).
+let sheetsOn = true, sheetKey = '';
+try { sheetsOn = localStorage.getItem('sp-sheets') !== 'off'; } catch (e) { /* storage blocked */ }
+function addSheets() {
+  for (const m of IDX.sheets || []) {
+    const id = 'sheet-' + m.id;
+    if (ML.getSource(id)) continue;
+    ML.addSource(id, { type: 'raster', tiles: [`wt/WWIIMM${m.id}_TIFF/{z}/{x}/{y}.png`], tileSize: 256, minzoom: 8, maxzoom: 16, bounds: m.b, attribution: '' });
+    ML.addLayer({ id, type: 'raster', source: id, minzoom: 10, layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.92, 'raster-fade-duration': 0 } });
+  }
+  sheetKey = ''; syncSheets();
+}
+function sheetsInForce(t) {
+  // Group editions by place name and pick the one in force on date t.
+  const iso = t == null ? '1944-06-06' : new Date(t).toISOString().slice(0, 10), groups = {};
+  for (const m of IDX.sheets || []) (groups[m.name] ||= []).push(m);
+  const on = new Set();
+  for (const eds of Object.values(groups)) {
+    eds.sort((a, b) => a.pub.localeCompare(b.pub));
+    const cur = eds.filter((m) => m.pub <= iso).pop() || eds[0];
+    on.add(cur.id);
+  }
+  return on;
+}
+function syncSheets() {
+  if (!tilesReady() || !IDX.sheets) return;
+  const on = sheetsOn ? sheetsInForce(curT) : new Set(), key = [...on].join();
+  if (key === sheetKey) return;
+  sheetKey = key;
+  for (const m of IDX.sheets) { const id = 'sheet-' + m.id; if (ML.getLayer(id)) ML.setLayoutProperty(id, 'visibility', on.has(m.id) ? 'visible' : 'none'); }
+}
+// The sheet under the centre of the view, for the credit line.
+function sheetHere() {
+  if (!sheetsOn || !useTiles() || tileZoom() < 10) return null;
+  const on = sheetsInForce(curT), [x, y] = view.c;
+  return (IDX.sheets || []).find((m) => on.has(m.id) && x >= m.b[0] && x <= m.b[2] && y >= m.b[1] && y <= m.b[3]) || null;
 }
 function tileZoom() {
   // Match the tiled map's scale to the globe's at the centre of the view.
@@ -380,6 +422,10 @@ function syncTiles() {
   if (tileAlpha <= 0) { if (el.style.visibility !== 'hidden') el.style.visibility = 'hidden'; $('attr').hidden = true; if (view.k < TILE_K * 3) initTiles(); return; }
   el.style.visibility = 'visible'; $('attr').hidden = false;
   ML.jumpTo({ center: view.c, zoom: tileZoom() });
+  syncSheets();
+  const sh = sheetHere(), sa = $('sheetattr');
+  if (sa) { sa.hidden = !sh; if (sh) sa.textContent = `1944 map: ${sh.name}, ${sh.scale.replace(/(\d)(?=(\d{3})+$)/g, '$1,')}, ${sh.kind.charAt(0).toLowerCase() + sh.kind.slice(1)}, ${fmtDate(Date.parse(sh.pub))}. Laurier Military History Archive / U. Waterloo / Scholars GeoPortal`; }
+  const tg = $('sheettoggle'); if (tg) tg.hidden = tileZoom() < 9.5;
 }
 // Overlay projection: the tiled map's own once it's mostly showing, otherwise the globe.
 const useTiles = () => tilesReady() && tileAlpha >= 0.5;
@@ -689,6 +735,8 @@ canvas.addEventListener('wheel', (e) => {
   zoomBy(Math.exp(Math.max(-0.5, Math.min(0.5, e.deltaY * 0.0015))), e.clientX - r.left, e.clientY - r.top);
 }, { passive: false });
 canvas.addEventListener('dblclick', (e) => { const r = canvas.getBoundingClientRect(); zoomBy(0.5, e.clientX - r.left, e.clientY - r.top); });
+{ const tg = $('sheettoggle'); tg.setAttribute('aria-pressed', String(sheetsOn));
+  tg.addEventListener('click', () => { sheetsOn = !sheetsOn; tg.setAttribute('aria-pressed', String(sheetsOn)); try { localStorage.setItem('sp-sheets', sheetsOn ? 'on' : 'off'); } catch (e) { /* storage blocked */ } sheetKey = ''; draw(); }); }
 $('zin').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(0.6); });
 $('zout').addEventListener('click', () => { lastWheel = performance.now(); zoomBy(1 / 0.6); });
 $('mreset').addEventListener('click', () => { const i = active; active = -3; go(i); });

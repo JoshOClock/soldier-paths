@@ -49,6 +49,7 @@ const quotes = load('quotes', ['quote_id', 'event_id', 'source_id', 'text'], tru
 const notes = load('closeby_notes', ['note_id', 'soldier_a', 'events_a', 'soldier_b', 'events_b', 'title', 'text'], true);
 const landmarks = load('landmarks', ['landmark_id', 'name', 'kind', 'lon', 'lat'], true);
 const glossary = load('glossary', ['term', 'note'], true);
+const sheets = load('map_sheets', ['sheet_id', 'name', 'published', 'west', 'south', 'east', 'north'], true);
 const conflicts = load('conflicts', ['conflict_id', 'soldier_id', 'fact_a', 'fact_b', 'note'], true);
 
 const S = index(soldiers, 'soldier_id', 'soldiers');
@@ -287,6 +288,7 @@ fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify({
   }),
   landmarks: landmarks.map((l) => ({ name: l.name, kind: l.kind, lon: +l.lon, lat: +l.lat, maxKm: +l.max_view_km || 400, d: l.description })),
   glossary: glossary.map((g) => [g.term, g.note]),
+  sheets: sheets.map((m) => ({ id: m.sheet_id, name: m.name, scale: m.scale, kind: m.kind, pub: m.published, b: [+m.west, +m.south, +m.east, +m.north] })),
   units: Object.fromEntries(units.map((u) => [u.unit_id, { name: u.name, kind: u.kind, parent: u.parent_id, project44: u.project44_url || '' }])),
   places: placeOut,
   sources: Object.fromEntries(sources.map((s) => [s.source_id, strip(s)])),
