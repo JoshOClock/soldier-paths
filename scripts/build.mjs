@@ -49,6 +49,8 @@ const quotes = load('quotes', ['quote_id', 'event_id', 'source_id', 'text'], tru
 const notes = load('closeby_notes', ['note_id', 'soldier_a', 'events_a', 'soldier_b', 'events_b', 'title', 'text'], true);
 const landmarks = load('landmarks', ['landmark_id', 'name', 'kind', 'lon', 'lat'], true);
 const glossary = load('glossary', ['term', 'note'], true);
+// Photos and clippings. Files live in data/media and are kept small (the build warns over 400 KB).
+const media = load('media', ['media_id', 'soldier_id', 'file', 'kind', 'caption'], true);
 const sheets = load('map_sheets', ['sheet_id', 'name', 'published', 'west', 'south', 'east', 'north'], true);
 const conflicts = load('conflicts', ['conflict_id', 'soldier_id', 'fact_a', 'fact_b', 'note'], true);
 
@@ -107,6 +109,14 @@ for (const r of events) {
   if (!r._range) err(`${r._where}: can't read date "${r.date}"`);
 }
 
+for (const m of media) {
+  checkRef(m, 'soldier_id', S, 'soldier');
+  if (m.event_id) checkRef(m, 'event_id', E, 'event');
+  if (m.source_id) checkRef(m, 'source_id', SRC, 'source');
+  const f = path.join(DATA, 'media', m.file);
+  if (!fs.existsSync(f)) err(`${m._where}: no file data/media/${m.file}`);
+  else if (fs.statSync(f).size > 400 * 1024) warn(`${m._where}: data/media/${m.file} is ${Math.round(fs.statSync(f).size / 1024)} KB; resize it to under 400 KB (about 1600 px wide)`);
+}
 for (const q of quotes) { checkRef(q, 'event_id', E, 'event'); checkRef(q, 'source_id', SRC, 'source'); }
 for (const n of notes) {
   checkRef(n, 'soldier_a', S, 'soldier'); checkRef(n, 'soldier_b', S, 'soldier');
@@ -340,6 +350,7 @@ for (const s of pub) {
     events: [...events.filter((e) => e.soldier_id === s.soldier_id).map((e) => ({ ...strip(e), start: dayToIso(e._start ?? e._range.lo), end: e._range.hi == null ? null : dayToIso(e._range.hi), quotes: quotes.filter((q) => q.event_id === e.event_id).map(strip) })),
       ...unitStopsFor(s)].sort((a, b) => a.start.localeCompare(b.start)),
     conflicts: conflicts.filter((c) => c.soldier_id === s.soldier_id).map(strip),
+    media: media.filter((m) => m.soldier_id === s.soldier_id).map((m) => ({ ...strip(m), src: `data/media/${m.file}` })),
     track: tracks.get(s.soldier_id),
   }, null, 1));
 }
