@@ -386,6 +386,21 @@ for (const u of unitPaths) {
   }, null, 1));
 }
 const idxPath = path.join(OUT, 'index.json'), idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
+// Named together: two or more public soldiers citing the same specific record (a clipping, a page, a list).
+// Broad sources (books, histories, AI summaries, the prototype) and anything cited by more than 25 soldiers are left out.
+const BROAD = new Set(['book', 'article', 'ai_summary', 'website']);
+const cites = new Map();
+for (const s of pub) {
+  for (const e of events.filter((x) => x.soldier_id === s.soldier_id)) {
+    const ids = new Set([e.source_id, ...quotes.filter((q) => q.event_id === e.event_id).map((q) => q.source_id)]);
+    for (const id of ids) {
+      const src = SRC.get(id); if (!src || BROAD.has(src.kind) || id === 'src-prototype') continue;
+      if (!cites.has(id)) cites.set(id, new Map());
+      if (!cites.get(id).has(s.soldier_id)) cites.get(id).set(s.soldier_id, e.event_id);
+    }
+  }
+}
+idx.shared = [...cites].filter(([, m]) => m.size >= 2 && m.size <= 25).map(([id, m]) => ({ source: id, title: SRC.get(id).title, who: [...m].map(([sid, ev]) => ({ id: sid, ev })) }));
 idx.unitpaths = unitPaths.map((u) => ({ id: 'unit-' + u.unit_id, name: u.name, short: u.short_name || u.name, kind: 'unit', unit: U.get(u.parent_id)?.name || '', stops: unitLocs.filter((l) => l.unit_id === u.unit_id && l._range).length }));
 fs.writeFileSync(idxPath, JSON.stringify(idx, null, 1));
 

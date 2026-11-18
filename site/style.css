@@ -289,3 +289,13 @@ figure.clip img{background:#fff}
 .tabs .tab.unit [role=tab]{text-transform:none;font-size:16px;letter-spacing:.02em}
 .tabs .tab.unit .ut{font-size:10px;color:var(--muted);margin-right:6px;vertical-align:2px}
 .story figure.archive img{background:#ccc}
+.xings{margin:12px 0 0;padding:8px 10px;border:1px solid var(--rule);background:var(--paper)}
+.xings .xh{font-family:var(--f-type);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 4px}
+.xings ul{list-style:none;margin:0 0 6px;padding:0}
+.xings li{display:flex;align-items:center;gap:8px;font-size:14px;padding:3px 0}
+.xings li img{width:22px;height:22px;border-radius:50%;object-fit:cover;filter:grayscale(1)}
+.xings li span{flex:1}
+.xings li i{color:var(--muted);font-size:13px}
+.xings .xadd{font-family:var(--f-type);font-size:12px;background:none;border:1px dashed var(--border);color:var(--ink);padding:2px 8px;cursor:pointer}
+.xings .xmore{font-family:var(--f-type);font-size:12px;color:var(--muted)}
+.step h3 .met{display:block;font-family:var(--f-type);font-size:12px;font-weight:400;color:var(--gold);letter-spacing:.04em;margin-bottom:2px}
