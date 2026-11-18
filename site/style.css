@@ -233,6 +233,9 @@ a{color:var(--route)}
 .welcome .pick b{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.02em}
 .welcome .pick span{font-family:var(--f-type);font-size:12px;color:var(--muted)}
 .welcome .small{font-size:14px}
+.welcome .addfam{margin:0 0 16px}
+.welcome .addfam a{display:inline-block;font-family:var(--f-type);font-size:13px;letter-spacing:.04em;color:var(--ink);border:1px solid var(--route);padding:6px 12px;text-decoration:none}
+.welcome .addfam a:hover{background:var(--route);color:#fff}
 /* Hovering the map: a thin outline and a hint, so it's clear the wheel zooms the map here, not the story. */
 .mapbox::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 2px transparent;transition:box-shadow .15s;z-index:6}
 .mapbox:hover::after{box-shadow:inset 0 0 0 2px var(--route-soft)}
@@ -299,3 +302,7 @@ figure.clip img{background:#fff}
 .xings .xadd{font-family:var(--f-type);font-size:12px;background:none;border:1px dashed var(--border);color:var(--ink);padding:2px 8px;cursor:pointer}
 .xings .xmore{font-family:var(--f-type);font-size:12px;color:var(--muted)}
 .step h3 .met{display:block;font-family:var(--f-type);font-size:12px;font-weight:400;color:var(--gold);letter-spacing:.04em;margin-bottom:2px}
+.welcome .wsearch{display:block;width:100%;box-sizing:border-box;margin:16px 0 4px;padding:10px 12px;font:15px var(--f-type);color:var(--ink);background:var(--card);border:1px solid var(--rule)}
+.welcome .wsearch:focus{outline:none;border-color:var(--route)}
+.welcome .noresult{font-size:14px;color:var(--muted)}
+.addmenu .noresult{margin:6px 12px;font-size:13px;color:var(--muted)}

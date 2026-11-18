@@ -74,22 +74,36 @@ function saveHash() {
   const q = ROSTER.length ? `show=${ROSTER.join(',')}${SELF ? '&on=' + SELF : ''}` : '';
   history.replaceState(null, '', q ? '#' + q : location.pathname);
 }
+// Search: every word typed must appear somewhere in the name, rank or unit (accents ignored).
+const fold = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const hay = (...parts) => fold(parts.filter(Boolean).join(' '));
+function filterList(root, q) {
+  const words = fold(q).split(/\s+/).filter(Boolean);
+  let shown = 0;
+  root.querySelectorAll('li:not(.mh)').forEach((li) => { const b = li.querySelector('[data-name]'); if (!b) return;
+    li.hidden = !words.every((w) => b.dataset.name.includes(w)); if (!li.hidden) shown++; });
+  // Hide a group heading (and its list) when nothing under it matches.
+  root.querySelectorAll('li.mh').forEach((h) => { let n = h.nextElementSibling, any = false;
+    while (n && !n.classList.contains('mh')) { if (!n.hidden) any = true; n = n.nextElementSibling; } h.hidden = !any; });
+  root.querySelectorAll('[data-group]').forEach((g) => { g.hidden = !g.querySelector('li:not(.mh):not([hidden])'); });
+  const none = root.querySelector('.noresult'); if (none) none.hidden = shown > 0 || !words.length;
+}
 function buildTabs() {
   const nav = $('tabs');
   const rest = IDX.soldiers.filter((s) => !ROSTER.includes(s.id)), restU = (IDX.unitpaths || []).filter((u) => !ROSTER.includes(u.id));
   nav.innerHTML = ROSTER.map((id) => { const s = soldier(id);
     return `<span class="tab${isUnit(id) ? ' unit' : ''}"><button role="tab" data-id="${id}" aria-selected="${id === SELF}">${isUnit(id) ? `<span class="ut" aria-label="Unit">▲</span>${esc(who(id))}` : esc(s.name.replace(/,.*$/, ''))}</button><button type="button" class="tabx" data-id="${id}" aria-label="Remove ${esc(s.name)}" title="Remove from the map">×</button></span>`; }).join('')
     + `<div class="addwrap"><button type="button" class="addbtn" id="addbtn" aria-expanded="false"${rest.length + restU.length ? '' : ' disabled'}>+ Add</button>`
-    + `<div class="addmenu" id="addmenu" hidden>${IDX.soldiers.length > 8 ? '<input type="search" id="addq" placeholder="Search by name" aria-label="Search soldiers">' : ''}<ul>`
-    + (rest.length ? '<li class="mh">Soldiers</li>' : '') + rest.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(s.name.toLowerCase())}">${esc(s.name)}<span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')
-    + (restU.length ? '<li class="mh">Units</li>' : '') + restU.map((u) => `<li><button type="button" data-id="${u.id}" data-name="${esc(u.name.toLowerCase())}">${esc(u.name)}<span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')
-    + `</ul><a href="contribute.html">Not here? Add someone from your family →</a></div></div>`;
+    + `<div class="addmenu" id="addmenu" hidden><input type="search" id="addq" placeholder="Search name or unit" aria-label="Search soldiers and units"><ul>`
+    + (rest.length ? '<li class="mh">Soldiers</li>' : '') + rest.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(hay(s.name, s.rank, s.unit))}">${esc(s.name)}<span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')
+    + (restU.length ? '<li class="mh">Units</li>' : '') + restU.map((u) => `<li><button type="button" data-id="${u.id}" data-name="${esc(hay(u.name, u.unit, unitLabel(u.name)))}">${esc(u.name)}<span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')
+    + `</ul><p class="noresult" hidden>No one by that name yet.</p><a href="contribute.html">Not here? Add someone from your family →</a></div></div>`;
   nav.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => select(b.dataset.id, curT)));
   nav.querySelectorAll('.tabx').forEach((b) => b.addEventListener('click', () => removeSoldier(b.dataset.id)));
   const ab = $('addbtn'), menu = $('addmenu');
   ab.addEventListener('click', () => { menu.hidden = !menu.hidden; ab.setAttribute('aria-expanded', !menu.hidden); if (!menu.hidden) $('addq')?.focus(); });
   menu.querySelectorAll('li button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
-  $('addq')?.addEventListener('input', (e) => { const q = e.target.value.toLowerCase(); menu.querySelectorAll('li:not(.mh)').forEach((li) => { li.hidden = !li.firstChild.dataset.name.includes(q); }); });
+  $('addq')?.addEventListener('input', (e) => filterList(menu, e.target.value));
   const h = () => document.documentElement.style.setProperty('--tabh', nav.offsetHeight + 'px');
   h(); addEventListener('resize', h);
 }
@@ -107,11 +121,15 @@ function removeSoldier(id) {
 // Nobody added yet: a short welcome with the soldiers to choose from.
 function welcome() {
   SELF = null; STEPS = []; curT = null; active = -1; prog = -1; saveHash();
+  const units = IDX.unitpaths || [];
   $('story').innerHTML = `<section class="welcome"><div class="eyebrow">Soldier Paths · Second World War</div><h1>Follow a soldier</h1>
+    <p class="addfam"><a href="contribute.html">+ Add a soldier from your family</a></p>
     <p>Pick someone to follow across the map, then add others to see where they were on the same day.</p>
-    <ul class="pick">${IDX.soldiers.map((s) => `<li><button type="button" data-id="${s.id}">${s.face ? `<img src="${esc(s.face)}" alt="" width="48" height="48">` : ''}<b>${esc(s.name)}</b><span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>
-    ${(IDX.unitpaths || []).length ? `<h2 class="wh">Or follow a unit</h2><ul class="pick units">${IDX.unitpaths.map((u) => `<li><button type="button" data-id="${u.id}"><b>${esc(u.name)}</b><span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>` : ''}
-    <p class="small"><a href="contribute.html">Add someone from your family →</a></p></section>`;
+    <input type="search" class="wsearch" id="wq" placeholder="Search by name, rank or unit" aria-label="Search soldiers and units">
+    <div data-group><ul class="pick">${IDX.soldiers.map((s) => `<li><button type="button" data-id="${s.id}" data-name="${esc(hay(s.name, s.rank, s.unit))}">${s.face ? `<img src="${esc(s.face)}" alt="" width="48" height="48">` : ''}<b>${esc(s.name)}</b><span>${esc([s.rank, s.unit].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul></div>
+    ${units.length ? `<div data-group><h2 class="wh">Or follow a unit</h2><ul class="pick units">${units.map((u) => `<li><button type="button" data-id="${u.id}" data-name="${esc(hay(u.name, u.unit, unitLabel(u.name)))}"><b>${esc(u.name)}</b><span>${esc([u.unit, u.stops + (u.stops === 1 ? ' location' : ' locations') + ' so far'].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul></div>` : ''}
+    <p class="noresult" hidden>No one by that name yet. <a href="contribute.html">Add him from your family →</a></p></section>`;
+  $('wq').addEventListener('input', (e) => filterList($('story'), e.target.value));
   document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => addSoldier(b.dataset.id)));
   tlEl.innerHTML = ''; tlG = null;
   $('capDate').textContent = ''; $('capAge').textContent = ''; $('capPlace').textContent = ''; $('capOther').textContent = '';
