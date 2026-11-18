@@ -31,28 +31,28 @@ clayton-brown-29,clayton-brown,location,May 1945,frisian-islands,,Frisian Island
 clayton-brown-30,clayton-brown,location,Summer 1945,eccleshall,,Leave in England,src-lynda-booklet,family,family,
 clayton-brown-31,clayton-brown,location,August 1945,halifax,,The Île de France,src-red-deer-advocate-aug-15-1945-local-boys-on-their-way-home,documented,family,
 clayton-brown-32,clayton-brown,discharge,"Sept. 12, 1945",lacombe,,"Calgary, then Lacombe",src-lacombe-globe-the-tank-killers,documented,family,
-gordon-sweet-01,gordon-sweet,birth,"Feb. 23, 1914",yellow-grass,,Born in Yellow Grass,src-quiet-service,family,family,
+gordon-sweet-01,gordon-sweet,birth,"Feb. 23, 1914",yellow-grass,,Born in Yellow Grass,src-lac-gordon-file,documented,ai_draft,"Attestation paper, file p. 14, as read by the AI narrative"
 gordon-sweet-02,gordon-sweet,location,1924,lacombe,,"Sweet's Pharmacy, Lacombe",src-prototype,family,family,From the prototype; no quoted source yet
-gordon-sweet-03,gordon-sweet,location,1938,lacombe,,Ski club and the militia,src-quiet-service,family,family,
+gordon-sweet-03,gordon-sweet,location,1938,lacombe,,Ski club and the militia,src-lac-gordon-file,documented,ai_draft,"NPAM service with 17th Cavalry Field Ambulance from 1938, per the narrative"
 gordon-sweet-04,gordon-sweet,location,"May 4, 1940",edmonton,,"Pharmacy diploma, University of Alberta",src-edmonton-bulletin-may-4-1940-p-24,documented,family,
 gordon-sweet-05,gordon-sweet,location,"Sept. 12, 1940",sarcee-camp,,Into uniform,src-lacombe-globe-sept-12-1940-p-1,documented,family,
 gordon-sweet-06,gordon-sweet,location,"Aug. 11, 1941",sarcee-camp,,Running the dispensary at Sarcee Camp,src-edmonton-bulletin-aug-11-1941-p-8,documented,family,
-gordon-sweet-07,gordon-sweet,enlistment,"Oct. 3, 1941",edmonton,,Enlists in Edmonton,src-quiet-service,family,family,
-gordon-sweet-08,gordon-sweet,promotion,"Nov. 14, 1941",st-johns-que,,Six weeks from private to officer,src-quiet-service,family,family,
-gordon-sweet-09,gordon-sweet,location,"Jan. 16, 1942",nanaimo,,"Nanaimo, on Vancouver Island",src-prototype,family,family,From the prototype; no quoted source yet
-gordon-sweet-10,gordon-sweet,location,Oct. 1942,camp-borden,,"Camp Borden, Ontario",src-prototype,family,family,From the prototype; no quoted source yet
+gordon-sweet-07,gordon-sweet,enlistment,"Oct. 3, 1941",edmonton,,Enlists in Edmonton,src-lac-gordon-file,documented,ai_draft,"Attestation paper, file p. 14, as read by the AI narrative"
+gordon-sweet-08,gordon-sweet,promotion,"Nov. 14, 1941",st-johns-que,,Six weeks from private to officer,src-lac-gordon-file,documented,ai_draft,"After Order and officer summary card, file p. 7, as read by the AI narrative. Course at the Army School of Administration, St. Johns, Que."
+gordon-sweet-09,gordon-sweet,location,"Jan. 16, 1942",nanaimo,,"Nanaimo, on Vancouver Island",src-lac-gordon-file,documented,ai_draft,"Promoted Lieutenant 16 Jan 1942 at Nanaimo, per the narrative"
+gordon-sweet-10,gordon-sweet,location,Oct. 1942,camp-borden,,"Camp Borden, Ontario",src-lac-gordon-file,documented,ai_draft,"Unit at Camp Borden Oct 1942; Captain (QM) about 12 Oct 1942, per the narrative"
 gordon-sweet-11,gordon-sweet,location,"June 16, 1943",liverpool,,Sailing for England,src-lacombe-globe-june-30-1943-p-6,documented,family,
-gordon-sweet-12,gordon-sweet,location,1943 to 1944,england,,Training for the invasion,src-prototype,family,family,From the prototype; no quoted source yet
-gordon-sweet-13,gordon-sweet,location,"June 19, 1944",juno-beach,,Juno Beach,src-quiet-service,family,family,
-gordon-sweet-14,gordon-sweet,location,July 1944,caen,,Caen and Verrières Ridge,src-prototype,family,family,From the prototype; no quoted source yet
-gordon-sweet-15,gordon-sweet,location,August 1944,falaise,,Falaise,src-prototype,family,family,From the prototype; no quoted source yet
-gordon-sweet-16,gordon-sweet,location,"Aug. 28, 1944",the-seine,,Across the Seine,src-prototype,family,family,From the prototype; no quoted source yet
+gordon-sweet-12,gordon-sweet,location,1943 to 1944,england,,Training for the invasion,src-lac-gordon-file,documented,ai_draft,"Dental records: 19th Cdn Fd Amb Oct 1943, 4 Coy 17 Fd Amb Mar 1944 (England), per the narrative"
+gordon-sweet-13,gordon-sweet,location,"June 19, 1944",juno-beach,,Juno Beach,src-quiet-service,inferred,ai_draft,The AI narrative says the unit landed about 13 days after D-Day; it doesn't cite his file for this date
+gordon-sweet-14,gordon-sweet,location,July 1944,caen,,Caen and Verrières Ridge,src-quiet-service,inherited,ai_draft,Where his brigade was. The AI narrative assumes his field ambulance went with the brigade; his own file doesn't place him here
+gordon-sweet-15,gordon-sweet,location,August 1944,falaise,,Falaise,src-quiet-service,inherited,ai_draft,Where his brigade was; his own file doesn't place him here
+gordon-sweet-16,gordon-sweet,location,"Aug. 28, 1944",the-seine,,Across the Seine,src-quiet-service,inherited,ai_draft,Where his brigade was; his own file doesn't place him here
 gordon-sweet-17,gordon-sweet,location,Fall 1944,antwerp,,Belgium and Holland,src-lacombe-globe-nov-30-1944-p-3,documented,family,
-gordon-sweet-18,gordon-sweet,location,February 1945,cleve,,Into the Rhineland,src-prototype,family,family,From the prototype; no quoted source yet
-gordon-sweet-19,gordon-sweet,location,"Mar. 29, 1945",rees,,Across the Rhine at Rees,src-prototype,family,family,From the prototype; no quoted source yet
-gordon-sweet-20,gordon-sweet,location,April to May 1945,apeldoorn,,Through Holland to the end,src-prototype,family,family,From the prototype; no quoted source yet
+gordon-sweet-18,gordon-sweet,location,February 1945,cleve,,Into the Rhineland,src-quiet-service,inherited,ai_draft,"Where his brigade was; his own file doesn't place him here. The nearest entry in it is a dental record from Dec. 9, 1944, at 5 Company, 17th Field Ambulance, with no place given (file p. 32)"
+gordon-sweet-19,gordon-sweet,location,"Mar. 29, 1945",rees,,Across the Rhine at Rees,src-quiet-service,inherited,ai_draft,His brigade crossed near Rees; his own file doesn't place him here
+gordon-sweet-20,gordon-sweet,location,April to May 1945,apeldoorn,,Through Holland to the end,src-quiet-service,inherited,ai_draft,"His brigade's route. Mel Barr, a medic in his unit, said they were at ""Leopold, Germany"" when the war ended"
 gordon-sweet-21,gordon-sweet,award,Dec. 1945,apeldoorn,,Member of the Order of the British Empire,src-edmonton-bulletin-dec-14-1945-pp-1-and-3,documented,family,
-gordon-sweet-22,gordon-sweet,location,"Feb. 1, 1946",canada,,Back in Canada,src-prototype,family,family,From the prototype; no quoted source yet
+gordon-sweet-22,gordon-sweet,location,"Feb. 1, 1946",canada,,Back in Canada,src-lac-gordon-file,documented,ai_draft,"Returned to Canada 1 Feb 1946, per the narrative"
 gordon-sweet-23,gordon-sweet,discharge,April 1946,calgary,,Out of the army,src-edmonton-bulletin-apr-10-1946-p-9,documented,family,
 gordon-sweet-24,gordon-sweet,location,1946,lacombe,,Taking over Sweet's Pharmacy,src-prototype,family,family,From the prototype; no quoted source yet
 gordon-sweet-25,gordon-sweet,award,July 1947,lacombe,,The M.B.E. presented in Edmonton,src-edmonton-bulletin-july-11-1947-pp-11-and-12,documented,family,

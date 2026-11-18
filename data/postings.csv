@@ -2,4 +2,4 @@ posting_id,soldier_id,unit_id,date_from,date_to,role,source_id,confidence,status
 p-clayton-1,clayton-brown,23-atk-bty,13 Sep 1939,12 Sep 1945,Gunner to Sergeant,src-lynda-booklet,family,family,Enlisted in Calgary; demobbed 12 Sep 1945
 p-clayton-2,clayton-brown,23-bty-k-trp,Jul 1944,20 Jul 1944,,src-lynda-booklet,family,disputed,Start date not recorded. See conflicts.csv c-1
 p-clayton-3,clayton-brown,23-bty-j-trp,21 Jul 1944,May 1945,,src-lynda-booklet,family,disputed,See conflicts.csv c-1
-p-gordon-1,gordon-sweet,17-lt-fd-amb,14 Nov 1941,Apr 1946,Quartermaster (2/Lt then Captain),src-quiet-service,family,family,Commissioned 2/Lt (Qr Mr) 14 Nov 1941 into 17th Field Ambulance RCAMC
+p-gordon-1,gordon-sweet,17-lt-fd-amb,3 Oct 1941,1945,Quartermaster (2/Lt then Captain),src-lac-gordon-file,documented,ai_draft,"Enlisted as a private into 17th Fd Amb 3 Oct 1941; 2/Lt (Qr Mr) 14 Nov 1941. His discharge interview (file p. 46) says he finished overseas ""with 9 F.D.H. to repatriation""; the date he moved is not given"

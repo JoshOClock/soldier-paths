@@ -180,7 +180,7 @@ function renderStory() {
         ${primary.map(quoteBlock).join('')}
         ${!e.quotes.length ? `<p class="note">${esc(e.note || 'No quoted source yet.')}</p>` : ''}
         ${secondary.length ? `<details class="more"><summary>More</summary>${secondary.map(quoteBlock).join('')}</details>` : ''}
-        <p class="conf"><span class="${cc}">${esc(cl)}</span></p>
+        <p class="conf"><span class="${cc}">${esc(cl)}</span>${e.status === 'ai_draft' ? '<span class="c-ai">AI reading, not yet checked</span>' : ''}</p>
       </article>`;
       STEPS.push({ t: st.t, p: st.p, e, k: 0 });
     });
