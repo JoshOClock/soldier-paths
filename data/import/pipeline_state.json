@@ -1,5 +1,5 @@
 {
-  "next_chapter": 16,
+  "next_chapter": 17,
   "runs": [
     {
       "date": "2026-11-18",
@@ -65,6 +65,17 @@
       "closeby_notes_added": 0,
       "photos_added": 0,
       "note": "2nd A-Tk Regt, 23 Bty and 17 Lt Fd Amb not named in ch. XV; no new soldiers to check; IWM item pages still not reachable from the cloud run"
+    },
+    {
+      "date": "2026-11-19",
+      "chapter": 16,
+      "units": [
+        "2-cdn-inf-div",
+        "2-cdn-armd-bde",
+        "17-lt-fd-amb"
+      ],
+      "rows_added": 11,
+      "note": "2nd A-Tk Regt and 23 Bty not named in ch. XVI"
     }
   ],
   "done": {
@@ -87,6 +98,15 @@
       "17-lt-fd-amb"
     ],
     "feasby": [
+      "17-lt-fd-amb"
+    ],
+    "16": [
+      "2-cdn-inf-div",
+      "2-cdn-atk-regt",
+      "23-atk-bty",
+      "23-bty-k-trp",
+      "23-bty-j-trp",
+      "2-cdn-armd-bde",
       "17-lt-fd-amb"
     ]
   },
