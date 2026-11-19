@@ -75,7 +75,11 @@
         "17-lt-fd-amb"
       ],
       "rows_added": 11,
-      "note": "2nd A-Tk Regt and 23 Bty not named in ch. XVI"
+      "note": "2nd A-Tk Regt and 23 Bty not named in ch. XVI; no new soldiers to check; all 20 episodes already had notes, but the Dec 1944-Jan 1945 Groesbeek/Grave episode had picked up the England note by the date fallback, so cb-auto-5 was written for it",
+      "soldiers_checked": [],
+      "closeby_notes_added": 1,
+      "photos_added": 0,
+      "photos_note": "IWM, Wikimedia Commons and LAC item pages all failed to fetch from the cloud run (client_error / url_not_found); candidate for later: LAC MIKAN 3201518, 2nd Div Signals truck on the Beveland causeway, 27 Oct 1944"
     }
   ],
   "done": {
