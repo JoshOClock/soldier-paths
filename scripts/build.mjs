@@ -238,8 +238,12 @@ function unitStopRow(loc, viaUnit, forUnitPath) {
     quotes: loc.quote ? [{ quote_id: 'uq:' + loc.location_id, event_id: 'u:' + loc.location_id, source_id: loc.source_id, page_ref: loc.page_ref || '', label: `From ${SRC.get(loc.source_id)?.title || 'the source'}${loc.page_ref ? ', ' + loc.page_ref : ''}`, text: loc.quote }] : [],
   };
 }
+function firstLoc(unitId) {
+  let m = null; for (const l of unitLocs) if (l.unit_id === unitId && l._range && (m == null || l._range.lo < m)) m = l._range.lo; return m;
+}
 function unitStopsFor(s) {
-  const own = events.filter((e) => e.soldier_id === s.soldier_id && e.place_id);
+  // A guess borrowed from a parent unit ('inherited') doesn't hide what his own unit's records say.
+  const own = events.filter((e) => e.soldier_id === s.soldier_id && e.place_id && e.confidence !== 'inherited');
   const out = [];
   for (const loc of unitLocs) {
     if (!loc._range) continue;
@@ -249,8 +253,13 @@ function unitStopsFor(s) {
     if (!post) continue;
     const up = unitPos(post.unit_id, d);
     if (!up || up.via !== loc.unit_id) continue;   // only the most specific unit with a location that day
+    // A parent unit's stop only counts once his own unit is known to be there: no D-Day for a unit that landed later.
+    if (up.via !== post.unit_id) { const first = firstLoc(post.unit_id); if (first != null && d < first) continue; }
     const ev = [...own].reverse().find((e) => (e._start ?? e._range.lo) <= d);
-    if (ev && (ev._range.hi == null || ev._range.hi >= d)) continue;   // his own record still covers that day
+    // His own record still covers that day, unless it only says a season ("Fall 1944"): then his unit's
+    // dated stops sit inside it and say more.
+    const vague = ev && ev._range.hi != null && ev._range.hi - (ev._start ?? ev._range.lo) > 45;
+    if (ev && !vague && (ev._range.hi == null || ev._range.hi >= d)) continue;
     if (own.some((e) => Math.abs((e._start ?? e._range.lo) - d) <= 2)) continue;
     out.push(unitStopRow(loc, up.via, false));
   }
