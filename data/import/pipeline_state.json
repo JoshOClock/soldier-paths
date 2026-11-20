@@ -80,6 +80,16 @@
       "closeby_notes_added": 1,
       "photos_added": 0,
       "photos_note": "IWM, Wikimedia Commons and LAC item pages all failed to fetch from the cloud run (client_error / url_not_found); candidate for later: LAC MIKAN 3201518, 2nd Div Signals truck on the Beveland causeway, 27 Oct 1944"
+    },
+    {
+      "date": "2026-11-20",
+      "chapter": 17,
+      "units": [],
+      "rows_added": 0,
+      "note": "Chapter not read: the fetch of Victory-17.html was blocked (permission request for ibiblio.org not answered in the unattended run). Chapter 17 left undone for all units; retry next run. No new soldiers to check; all 20 close-by episodes already have notes; photos skipped (archive pages not fetchable from the cloud run, as on earlier runs)",
+      "soldiers_checked": [],
+      "closeby_notes_added": 0,
+      "photos_added": 0
     }
   ],
   "done": {
@@ -101,9 +111,6 @@
       "2-cdn-armd-bde",
       "17-lt-fd-amb"
     ],
-    "feasby": [
-      "17-lt-fd-amb"
-    ],
     "16": [
       "2-cdn-inf-div",
       "2-cdn-atk-regt",
@@ -111,6 +118,9 @@
       "23-bty-k-trp",
       "23-bty-j-trp",
       "2-cdn-armd-bde",
+      "17-lt-fd-amb"
+    ],
+    "feasby": [
       "17-lt-fd-amb"
     ]
   },
