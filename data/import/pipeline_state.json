@@ -90,6 +90,15 @@
       "soldiers_checked": [],
       "closeby_notes_added": 0,
       "photos_added": 0
+    },
+    {
+      "date": "2026-11-20",
+      "chapter": 17,
+      "units": [
+        "2-cdn-inf-div"
+      ],
+      "rows_added": 1,
+      "note": "Rerun with Josh present after the nightly fetch was blocked. Ch. XVII names no 2nd Armd Bde, 2nd A-Tk Regt, 23 Bty or 17 Lt Fd Amb. Skipped: 4th Bde at Boxtel 29 Dec and Toronto Scottish mortars at Kapelsche Veer 26 Jan (no soldier posted to those units); division into Corps Reserve 26 Dec (no place named)."
     }
   ],
   "done": {
@@ -112,6 +121,15 @@
       "17-lt-fd-amb"
     ],
     "16": [
+      "2-cdn-inf-div",
+      "2-cdn-atk-regt",
+      "23-atk-bty",
+      "23-bty-k-trp",
+      "23-bty-j-trp",
+      "2-cdn-armd-bde",
+      "17-lt-fd-amb"
+    ],
+    "17": [
       "2-cdn-inf-div",
       "2-cdn-atk-regt",
       "23-atk-bty",
